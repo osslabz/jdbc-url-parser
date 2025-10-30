@@ -4,7 +4,7 @@
 
     <groupId>net.osslabz</groupId>
     <artifactId>jdbc-url-parser</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.2-SNAPSHOT</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A comprehensive JDBC URL parser for Java 17+</description>
@@ -17,7 +17,7 @@
         <project.build.sourceEncoding>${osslabz.encoding}</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${osslabz.encoding}</project.reporting.outputEncoding>
 
-        <project.build.outputTimestamp>2025-10-30T12:58:22Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-10-30T13:15:41Z</project.build.outputTimestamp>
 
         <maven.compiler.release>${osslabz.java.version}</maven.compiler.release>
     </properties>
