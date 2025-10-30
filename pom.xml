@@ -7,7 +7,7 @@
     <version>0.1.1-SNAPSHOT</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>A comprehensive JDBC URL parser for Java 17+ with RFC 3986-compliant property source tracking</description>
+    <description>A comprehensive JDBC URL parser for Java 17+</description>
     <url>https://github.com/osslabz/jdbc-url-parser</url>
 
     <properties>
