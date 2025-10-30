@@ -21,17 +21,17 @@ A comprehensive JDBC URL parser for Java 17+ that supports all databases autocon
 
 ## Supported Databases
 
-| Database       | URL Prefix         | Features                                |
-|----------------|--------------------|-----------------------------------------|
-| **MySQL**      | `jdbc:mysql:`      | Single/multi-host, properties           |
-| **MariaDB**    | `jdbc:mariadb:`    | Single/multi-host, properties           |
-| **PostgreSQL** | `jdbc:postgresql:` | Single/multi-host, IPv6, properties     |
-| **Oracle**     | `jdbc:oracle:`     | SID, Service Name, TNSNAMES descriptors |
-| **SQL Server** | `jdbc:sqlserver:`  | Instance names, semicolon properties    |
-| **H2**         | `jdbc:h2:`         | Memory, file, TCP, SSL modes            |
-| **HSQLDB**     | `jdbc:hsqldb:`     | Memory, file, resource, server modes    |
-| **Derby**      | `jdbc:derby:`      | Embedded, memory, network modes         |
-| **SQLite**     | `jdbc:sqlite:`     | File and in-memory databases            |
+| Database        | Features                                |
+|-----------------|-----------------------------------------|
+| **MySQL**       | Single/multi-host, properties           |
+| **MariaDB**     | Single/multi-host, properties           |
+| **PostgreSQL**  | Single/multi-host, IPv6, properties     |
+| **Oracle**      | SID, Service Name, TNSNAMES descriptors |
+| **SQL Server**  | Instance names, semicolon properties    |
+| **H2**          | Memory, file, TCP, SSL modes            |
+| **HSQLDB**      | Memory, file, resource, server modes    |
+| **Derby**       | Embedded, memory, network modes         |
+| **SQLite**      | File and in-memory databases            |
 
 ## Installation
 
