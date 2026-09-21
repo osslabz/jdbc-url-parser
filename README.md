@@ -4,11 +4,14 @@
 ![GitHub](https://img.shields.io/github/license/osslabz/jdbc-url-parser)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/osslabz/jdbc-url-parser/build-on-push.yml?branch=dev&label=build&logo=git)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/osslabz/jdbc-url-parser/build-release-on-main-push.yml?branch=main&label=perform-release&logo=semanticrelease)
+[![Reproducible Builds](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jvm-repo-rebuild/reproducible-central/master/content/net/osslabz/jdbc-url-parser/badge.json)](https://github.com/jvm-repo-rebuild/reproducible-central/blob/master/content/net/osslabz/jdbc-url-parser/README.md)
 [![Maven Central](https://img.shields.io/maven-central/v/net.osslabz/jdbc-url-parser?label=Maven%20Central)](https://search.maven.org/artifact/net.osslabz/jdbc-url-parser)
 
 
 
 A comprehensive JDBC URL parser for Java 17+ that supports all databases autoconfigured by Spring Boot 3.5.
+
+Both releases went out on 2025-10-30 and no functional change has landed since. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 81 tests assert the parsed output for all nine. One other project of mine depends on it.
 
 
 ## Features
@@ -41,14 +44,14 @@ A comprehensive JDBC URL parser for Java 17+ that supports all databases autocon
 <dependency>
     <groupId>net.osslabz</groupId>
     <artifactId>jdbc-url-parser</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```gradle
-implementation 'net.osslabz:jdbc-url-parser:0.1.0-SNAPSHOT'
+implementation 'net.osslabz:jdbc-url-parser:0.1.1'
 ```
 
 ## Quick Start
