@@ -3,7 +3,7 @@
 
 ![GitHub](https://img.shields.io/github/license/osslabz/jdbc-url-parser)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/osslabz/jdbc-url-parser/build-on-push.yml?branch=dev&label=build&logo=git)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/osslabz/jdbc-url-parser/build-release-on-main-push.yml?branch=main&label=perform-release&logo=semanticrelease)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/osslabz/jdbc-url-parser/release.yml?branch=dev&label=perform-release&logo=semanticrelease)
 [![Reproducible Builds](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jvm-repo-rebuild/reproducible-central/master/content/net/osslabz/jdbc-url-parser/badge.json)](https://github.com/jvm-repo-rebuild/reproducible-central/blob/master/content/net/osslabz/jdbc-url-parser/README.md)
 [![Maven Central](https://img.shields.io/maven-central/v/net.osslabz/jdbc-url-parser?label=Maven%20Central)](https://search.maven.org/artifact/net.osslabz/jdbc-url-parser)
 
