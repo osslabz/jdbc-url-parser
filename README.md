@@ -54,6 +54,26 @@ Both releases went out on 2025-10-30 and no functional change has landed since. 
 implementation 'net.osslabz:jdbc-url-parser:0.1.1'
 ```
 
+### Snapshots
+
+Every push to `dev` publishes the next version as a `-SNAPSHOT` to Central's snapshot repository. Maven doesn't
+search that repository by default, so a build that wants a snapshot declares it:
+
+```xml
+<repositories>
+    <repository>
+        <id>central-snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
+
 ## Quick Start
 
 ### Simple Example
