@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *   <li>SQLite</li>
  * </ul>
  */
-public class JdbcUrlParser {
+public final class JdbcUrlParser {
 
     private static final Logger log = LoggerFactory.getLogger(JdbcUrlParser.class);
 
