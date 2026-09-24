@@ -82,7 +82,7 @@ public class H2Parser extends AbstractUrlParser {
             String url, String protocol, String mainPart, Map<String, JdbcProperty> properties) {
         // Format: tcp://host:port/database or ssl://host:port/database
         boolean isSsl = mainPart.startsWith("ssl://");
-        String withoutScheme = isSsl ? mainPart.substring(6) : mainPart.substring(6);
+        String withoutScheme = mainPart.substring(mainPart.indexOf("://") + "://".length());
 
         String[] hostAndDb = splitFirst(withoutScheme, '/');
         String hostString = hostAndDb[0];
