@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -138,5 +139,20 @@ class JdbcUrlParserTest {
 
         JdbcUrl sqlite = JdbcUrlParser.parse("jdbc:sqlite:test.db");
         assertNull(sqlite.getPrimaryHost());
+    }
+
+    @Test
+    void parsesUppercaseUrlUnderTurkishDefaultLocale() {
+
+        Locale defaultLocale = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        try {
+            JdbcUrl parsed = JdbcUrlParser.parse("JDBC:SQLITE:test.db");
+
+            assertEquals(DatabaseProduct.SQLITE, parsed.databaseProduct());
+            assertEquals("test.db", parsed.databaseName());
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
     }
 }

@@ -1,5 +1,7 @@
 package net.osslabz.jdbc;
 
+import java.util.Locale;
+
 /**
  * Enumeration of supported database types. This covers the core subset of databases commonly used with Spring Boot.
  */
@@ -96,11 +98,11 @@ public enum DatabaseProduct {
             return UNKNOWN;
         }
 
-        String lowerUrl = url.toLowerCase();
+        String lowerUrl = url.toLowerCase(Locale.ROOT);
 
         // Check each database type's prefix
         for (DatabaseProduct type : values()) {
-            if (type != UNKNOWN && lowerUrl.startsWith(type.getUrlPrefix().toLowerCase())) {
+            if (type != UNKNOWN && lowerUrl.startsWith(type.getUrlPrefix().toLowerCase(Locale.ROOT))) {
                 return type;
             }
         }

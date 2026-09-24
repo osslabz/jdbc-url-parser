@@ -3,6 +3,7 @@ package net.osslabz.jdbc.parser;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import net.osslabz.jdbc.DatabaseProduct;
@@ -45,7 +46,7 @@ public abstract class AbstractUrlParser implements UrlParser {
         if (url == null || url.isBlank()) {
             throw new JdbcUrlParseException(url, "JDBC URL cannot be null or blank");
         }
-        if (!url.toLowerCase().startsWith("jdbc:")) {
+        if (!url.toLowerCase(Locale.ROOT).startsWith("jdbc:")) {
             throw new JdbcUrlParseException(url, "JDBC URL must start with 'jdbc:'");
         }
     }
@@ -60,7 +61,7 @@ public abstract class AbstractUrlParser implements UrlParser {
     protected String extractProtocol(String url, DatabaseProduct databaseProduct) {
 
         String prefix = databaseProduct.getUrlPrefix();
-        if (url.toLowerCase().startsWith(prefix.toLowerCase())) {
+        if (url.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT))) {
             return prefix;
         }
         throw new JdbcUrlParseException(url, "URL does not match expected prefix: " + prefix);
@@ -227,7 +228,7 @@ public abstract class AbstractUrlParser implements UrlParser {
      */
     protected String removeProtocol(String url, String protocol) {
 
-        if (url.toLowerCase().startsWith(protocol.toLowerCase())) {
+        if (url.toLowerCase(Locale.ROOT).startsWith(protocol.toLowerCase(Locale.ROOT))) {
             return url.substring(protocol.length());
         }
         throw new JdbcUrlParseException(url, "URL does not start with expected protocol: " + protocol);

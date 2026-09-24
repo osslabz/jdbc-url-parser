@@ -2,6 +2,7 @@ package net.osslabz.jdbc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import net.osslabz.jdbc.parser.DerbyParser;
 import net.osslabz.jdbc.parser.H2Parser;
 import net.osslabz.jdbc.parser.HSQLDBParser;
@@ -125,7 +126,7 @@ public class JdbcUrlParser {
      */
     public static boolean isJdbcUrl(String url) {
 
-        return url != null && url.toLowerCase().startsWith("jdbc:");
+        return url != null && url.toLowerCase(Locale.ROOT).startsWith("jdbc:");
     }
 
     /**

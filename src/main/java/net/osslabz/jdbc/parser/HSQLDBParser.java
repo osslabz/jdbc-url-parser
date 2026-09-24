@@ -1,6 +1,7 @@
 package net.osslabz.jdbc.parser;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import net.osslabz.jdbc.DatabaseProduct;
 import net.osslabz.jdbc.Host;
@@ -104,7 +105,7 @@ public class HSQLDBParser extends AbstractUrlParser {
         String databaseName = hostAndDb.length > 1 ? hostAndDb[1] : "";
 
         Host host = parseHost(hostString);
-        addDerivedProperty(properties, "MODE", scheme.toUpperCase());
+        addDerivedProperty(properties, "MODE", scheme.toUpperCase(Locale.ROOT));
 
         return new JdbcUrl(url, DatabaseProduct.HSQLDB, protocol, List.of(host), databaseName, properties);
     }
