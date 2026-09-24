@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Integration tests for the main JdbcUrlParser facade.
  */
@@ -20,14 +19,16 @@ class JdbcUrlParserTest {
 
         assertEquals(DatabaseProduct.MYSQL, JdbcUrlParser.detectDatabaseProduct("jdbc:mysql://localhost/db"));
         assertEquals(DatabaseProduct.POSTGRESQL, JdbcUrlParser.detectDatabaseProduct("jdbc:postgresql://localhost/db"));
-        assertEquals(DatabaseProduct.ORACLE, JdbcUrlParser.detectDatabaseProduct("jdbc:oracle:thin:@localhost:1521:ORCL"));
-        assertEquals(DatabaseProduct.SQLSERVER, JdbcUrlParser.detectDatabaseProduct("jdbc:sqlserver://localhost;databaseName=db"));
+        assertEquals(
+                DatabaseProduct.ORACLE, JdbcUrlParser.detectDatabaseProduct("jdbc:oracle:thin:@localhost:1521:ORCL"));
+        assertEquals(
+                DatabaseProduct.SQLSERVER,
+                JdbcUrlParser.detectDatabaseProduct("jdbc:sqlserver://localhost;databaseName=db"));
         assertEquals(DatabaseProduct.H2, JdbcUrlParser.detectDatabaseProduct("jdbc:h2:mem:test"));
         assertEquals(DatabaseProduct.HSQLDB, JdbcUrlParser.detectDatabaseProduct("jdbc:hsqldb:file:test"));
         assertEquals(DatabaseProduct.DERBY, JdbcUrlParser.detectDatabaseProduct("jdbc:derby:mydb"));
         assertEquals(DatabaseProduct.SQLITE, JdbcUrlParser.detectDatabaseProduct("jdbc:sqlite:test.db"));
     }
-
 
     @Test
     void testIsJdbcUrl() {
@@ -39,7 +40,6 @@ class JdbcUrlParserTest {
         assertFalse(JdbcUrlParser.isJdbcUrl(""));
     }
 
-
     @Test
     void testTryParseValid() {
 
@@ -48,14 +48,12 @@ class JdbcUrlParserTest {
         assertEquals(DatabaseProduct.MYSQL, result.databaseProduct());
     }
 
-
     @Test
     void testTryParseInvalid() {
 
         JdbcUrl result = JdbcUrlParser.tryParse("invalid url");
         assertNull(result);
     }
-
 
     @Test
     void testTryParseNull() {
@@ -64,13 +62,11 @@ class JdbcUrlParserTest {
         assertNull(result);
     }
 
-
     @Test
     void testParseNullThrowsException() {
 
         assertThrows(IllegalArgumentException.class, () -> JdbcUrlParser.parse(null));
     }
-
 
     @Test
     void testParseBlankThrowsException() {
@@ -78,20 +74,17 @@ class JdbcUrlParserTest {
         assertThrows(IllegalArgumentException.class, () -> JdbcUrlParser.parse("  "));
     }
 
-
     @Test
     void testParseNonJdbcUrlThrowsException() {
 
         assertThrows(JdbcUrlParseException.class, () -> JdbcUrlParser.parse("mysql://localhost/db"));
     }
 
-
     @Test
     void testParseUnknownDatabaseThrowsException() {
 
         assertThrows(JdbcUrlParseException.class, () -> JdbcUrlParser.parse("jdbc:unknown://localhost/db"));
     }
-
 
     @Test
     void testJdbcUrlEquality() {
@@ -104,7 +97,6 @@ class JdbcUrlParserTest {
         assertEquals(parsed1.hashCode(), parsed2.hashCode());
     }
 
-
     @Test
     void testJdbcUrlToString() {
 
@@ -116,7 +108,6 @@ class JdbcUrlParserTest {
         assertTrue(toString.contains("jdbc:postgresql:"));
     }
 
-
     @Test
     void testOriginalUrlPreserved() {
 
@@ -125,8 +116,6 @@ class JdbcUrlParserTest {
 
         assertEquals(url, parsed.originalUrl());
     }
-
-
 
     @Test
     void testIsNetworkBased() {
@@ -139,7 +128,6 @@ class JdbcUrlParserTest {
         assertFalse(h2.isNetworkBased());
         assertTrue(h2.isFileBased());
     }
-
 
     @Test
     void testGetPrimaryHost() {

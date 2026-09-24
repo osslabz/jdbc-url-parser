@@ -3,7 +3,6 @@ package net.osslabz.jdbc.parser;
 import net.osslabz.jdbc.DatabaseProduct;
 import net.osslabz.jdbc.JdbcUrl;
 
-
 /**
  * Interface for database-specific JDBC URL parsers. Each database type has its own parser implementation to handle vendor-specific URL formats.
  */

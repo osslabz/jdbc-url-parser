@@ -14,7 +14,6 @@ import net.osslabz.jdbc.PropertySource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Abstract base class for URL parsers providing common parsing utilities.
  */
@@ -24,19 +23,16 @@ public abstract class AbstractUrlParser implements UrlParser {
 
     protected final Set<DatabaseProduct> supportedTypes;
 
-
     protected AbstractUrlParser(DatabaseProduct... supportedTypes) {
 
         this.supportedTypes = Set.of(supportedTypes);
     }
-
 
     @Override
     public boolean supports(DatabaseProduct databaseProduct) {
 
         return supportedTypes.contains(databaseProduct);
     }
-
 
     /**
      * Validates that the URL starts with "jdbc:".
@@ -54,7 +50,6 @@ public abstract class AbstractUrlParser implements UrlParser {
         }
     }
 
-
     /**
      * Extracts the protocol from a JDBC URL (e.g., "jdbc:mysql").
      *
@@ -70,7 +65,6 @@ public abstract class AbstractUrlParser implements UrlParser {
         }
         throw new JdbcUrlParseException(url, "URL does not match expected prefix: " + prefix);
     }
-
 
     /**
      * Parses properties from a query string (after '?') or path parameters (after ';'). Supports both '&' and ';' as separators. Always returns a mutable map so parsers can add additional properties.
@@ -108,7 +102,6 @@ public abstract class AbstractUrlParser implements UrlParser {
         return properties;
     }
 
-
     /**
      * Adds a derived property to the properties map.
      *
@@ -121,7 +114,6 @@ public abstract class AbstractUrlParser implements UrlParser {
         properties.put(key, new JdbcProperty(PropertySource.DERIVED, value));
     }
 
-
     /**
      * Adds a descriptor property to the properties map.
      *
@@ -133,7 +125,6 @@ public abstract class AbstractUrlParser implements UrlParser {
 
         properties.put(key, new JdbcProperty(PropertySource.DESCRIPTOR, value));
     }
-
 
     /**
      * Parses a host:port string into a Host object.
@@ -169,7 +160,6 @@ public abstract class AbstractUrlParser implements UrlParser {
         return Host.of(hostString);
     }
 
-
     /**
      * Parses SQL Server host with instance name (hostname\instanceName:port).
      *
@@ -203,7 +193,6 @@ public abstract class AbstractUrlParser implements UrlParser {
         return Host.of(hostname, port != null ? port : 0, instanceName);
     }
 
-
     /**
      * Parses multiple hosts separated by commas (for multi-host URLs).
      *
@@ -229,7 +218,6 @@ public abstract class AbstractUrlParser implements UrlParser {
         return hosts;
     }
 
-
     /**
      * Extracts the portion of the URL after the protocol prefix.
      *
@@ -245,7 +233,6 @@ public abstract class AbstractUrlParser implements UrlParser {
         throw new JdbcUrlParseException(url, "URL does not start with expected protocol: " + protocol);
     }
 
-
     /**
      * Splits a string by a delimiter, limiting to two parts.
      *
@@ -257,14 +244,10 @@ public abstract class AbstractUrlParser implements UrlParser {
 
         int index = input.indexOf(delimiter);
         if (index >= 0) {
-            return new String[] {
-                input.substring(0, index),
-                input.substring(index + 1)
-            };
+            return new String[] {input.substring(0, index), input.substring(index + 1)};
         }
         return new String[] {input};
     }
-
 
     /**
      * Splits by first occurrence of either ';' or '?'. Useful for databases that support both property delimiters.
@@ -288,12 +271,8 @@ public abstract class AbstractUrlParser implements UrlParser {
             return new String[] {input};
         }
 
-        return new String[] {
-            input.substring(0, splitIndex),
-            input.substring(splitIndex + 1)
-        };
+        return new String[] {input.substring(0, splitIndex), input.substring(splitIndex + 1)};
     }
-
 
     /**
      * Common parsing logic for standard network-based JDBC URLs. Handles format: jdbc:protocol://host:port/database?properties

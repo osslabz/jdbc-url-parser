@@ -15,7 +15,6 @@ public record Host(String hostname, Integer port, String instanceName) {
         }
     }
 
-
     /**
      * Creates a host with just hostname (no port or instance).
      *
@@ -26,7 +25,6 @@ public record Host(String hostname, Integer port, String instanceName) {
 
         return new Host(hostname, null, null);
     }
-
 
     /**
      * Creates a host with hostname and port.
@@ -40,7 +38,6 @@ public record Host(String hostname, Integer port, String instanceName) {
         return new Host(hostname, port, null);
     }
 
-
     /**
      * Creates a host with hostname, port, and instance name (for SQL Server).
      *
@@ -53,7 +50,6 @@ public record Host(String hostname, Integer port, String instanceName) {
 
         return new Host(hostname, port, instanceName);
     }
-
 
     /**
      * Returns a string representation suitable for connection strings.

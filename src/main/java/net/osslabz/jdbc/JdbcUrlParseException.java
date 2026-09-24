@@ -7,7 +7,6 @@ public class JdbcUrlParseException extends RuntimeException {
 
     private final String jdbcUrl;
 
-
     /**
      * Creates a new parse exception.
      *
@@ -19,7 +18,6 @@ public class JdbcUrlParseException extends RuntimeException {
         super(message);
         this.jdbcUrl = jdbcUrl;
     }
-
 
     /**
      * Creates a new parse exception with a cause.
@@ -34,7 +32,6 @@ public class JdbcUrlParseException extends RuntimeException {
         this.jdbcUrl = jdbcUrl;
     }
 
-
     /**
      * Gets the JDBC URL that failed to parse.
      *
@@ -44,7 +41,6 @@ public class JdbcUrlParseException extends RuntimeException {
 
         return jdbcUrl;
     }
-
 
     @Override
     public String getMessage() {

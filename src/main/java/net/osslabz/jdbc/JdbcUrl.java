@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-
 /**
  * Represents a parsed JDBC URL with all its components. This is an immutable value object that provides structured access to JDBC URL parts.
  *
@@ -17,13 +16,12 @@ import java.util.stream.Collectors;
  * @param properties   connection properties extracted from the URL with source information
  */
 public record JdbcUrl(
-    String originalUrl,
-    DatabaseProduct databaseProduct,
-    String protocol,
-    List<Host> hosts,
-    String databaseName,
-    Map<String, JdbcProperty> properties
-) {
+        String originalUrl,
+        DatabaseProduct databaseProduct,
+        String protocol,
+        List<Host> hosts,
+        String databaseName,
+        Map<String, JdbcProperty> properties) {
 
     /**
      * Compact constructor with validation and defensive copying.
@@ -39,7 +37,6 @@ public record JdbcUrl(
         properties = properties == null ? Map.of() : Map.copyOf(properties);
     }
 
-
     /**
      * Gets the first host from the hosts list.
      *
@@ -49,7 +46,6 @@ public record JdbcUrl(
 
         return hosts.isEmpty() ? null : hosts.get(0);
     }
-
 
     /**
      * Gets a specific property value.
@@ -63,7 +59,6 @@ public record JdbcUrl(
         return prop != null ? prop.value() : null;
     }
 
-
     /**
      * Gets the full property object with value and source information.
      *
@@ -75,7 +70,6 @@ public record JdbcUrl(
         return properties.get(key);
     }
 
-
     /**
      * Gets all properties that originated from a specific source.
      *
@@ -85,13 +79,10 @@ public record JdbcUrl(
     public Map<String, String> getPropertiesBySource(PropertySource source) {
 
         return properties.entrySet().stream()
-            .filter(entry -> entry.getValue().source() == source)
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue().value()
-            ));
+                .filter(entry -> entry.getValue().source() == source)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, entry -> entry.getValue().value()));
     }
-
 
     /**
      * Gets all properties as a simple key-value map (without source information).
@@ -101,12 +92,9 @@ public record JdbcUrl(
     public Map<String, String> getPropertyValuesAsMap() {
 
         return properties.entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue().value()
-            ));
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, entry -> entry.getValue().value()));
     }
-
 
     /**
      * Checks if this is a file-based database connection.
@@ -118,7 +106,6 @@ public record JdbcUrl(
         return hosts.isEmpty();
     }
 
-
     /**
      * Checks if this is a network-based database connection.
      *
@@ -129,16 +116,14 @@ public record JdbcUrl(
         return !hosts.isEmpty();
     }
 
-
     @Override
     public String toString() {
 
-        return "JdbcUrl{" +
-               "type=" + databaseProduct +
-               ", protocol='" + protocol + '\'' +
-               ", hosts=" + hosts +
-               ", database='" + databaseName + '\'' +
-               ", properties=" + properties.size() + " entries" +
-               '}';
+        return "JdbcUrl{" + "type="
+                + databaseProduct + ", protocol='"
+                + protocol + '\'' + ", hosts="
+                + hosts + ", database='"
+                + databaseName + '\'' + ", properties="
+                + properties.size() + " entries" + '}';
     }
 }

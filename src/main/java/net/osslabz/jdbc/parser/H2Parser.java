@@ -8,7 +8,6 @@ import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.PropertySource;
 
-
 /**
  * Parser for H2 Database JDBC URLs.
  *
@@ -28,7 +27,6 @@ public class H2Parser extends AbstractUrlParser {
 
         super(DatabaseProduct.H2);
     }
-
 
     @Override
     public JdbcUrl parse(String url) {
@@ -77,11 +75,11 @@ public class H2Parser extends AbstractUrlParser {
         return new JdbcUrl(url, dbType, protocol, List.of(), databasePath, properties);
     }
 
-
     /**
      * Parses H2 in network mode (tcp:// or ssl://).
      */
-    private JdbcUrl parseNetworkMode(String url, String protocol, String mainPart, Map<String, JdbcProperty> properties) {
+    private JdbcUrl parseNetworkMode(
+            String url, String protocol, String mainPart, Map<String, JdbcProperty> properties) {
         // Format: tcp://host:port/database or ssl://host:port/database
         boolean isSsl = mainPart.startsWith("ssl://");
         String withoutScheme = isSsl ? mainPart.substring(6) : mainPart.substring(6);
@@ -95,5 +93,4 @@ public class H2Parser extends AbstractUrlParser {
 
         return new JdbcUrl(url, DatabaseProduct.H2, protocol, List.of(host), databaseName, properties);
     }
-
 }

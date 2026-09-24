@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Tests for HSQLDB (HyperSQL) JDBC URL parsing.
  */
@@ -24,7 +23,6 @@ class HSQLDBParserTest {
         assertEquals("MEMORY", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testHSQLDBFile() {
 
@@ -34,7 +32,6 @@ class HSQLDBParserTest {
         assertEquals("/opt/db/testdb", parsed.databaseName());
         assertEquals("FILE", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testHSQLDBImpliedFile() {
@@ -46,7 +43,6 @@ class HSQLDBParserTest {
         assertEquals("FILE", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testHSQLDBResource() {
 
@@ -56,7 +52,6 @@ class HSQLDBParserTest {
         assertEquals("/org/mydatabase/mydb", parsed.databaseName());
         assertEquals("RESOURCE", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testHSQLDBServer() {
@@ -71,7 +66,6 @@ class HSQLDBParserTest {
         assertEquals("HSQL", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testHSQLDBServerSSL() {
 
@@ -84,7 +78,6 @@ class HSQLDBParserTest {
         assertEquals("production", parsed.databaseName());
         assertEquals("HSQLS", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testHSQLDBHTTP() {
@@ -99,7 +92,6 @@ class HSQLDBParserTest {
         assertEquals("HTTP", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testHSQLDBHTTPS() {
 
@@ -113,7 +105,6 @@ class HSQLDBParserTest {
         assertEquals("HTTPS", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testHSQLDBFileWithProperties() {
 
@@ -124,7 +115,6 @@ class HSQLDBParserTest {
         assertEquals("true", parsed.getPropertyValue("shutdown"));
         assertEquals("mvcc", parsed.getPropertyValue("hsqldb.tx"));
     }
-
 
     @Test
     void testHSQLDBInMemoryWithProperties() {

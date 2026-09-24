@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Tests for PostgreSQL JDBC URL parsing.
  */
@@ -25,7 +24,6 @@ class PostgreSQLParserTest {
         assertEquals("mydb", parsed.databaseName());
     }
 
-
     @Test
     void testPostgreSQLWithProperties() {
 
@@ -37,7 +35,6 @@ class PostgreSQLParserTest {
         assertEquals("require", parsed.getPropertyValue("sslmode"));
     }
 
-
     @Test
     void testPostgreSQLWithoutPort() {
 
@@ -48,7 +45,6 @@ class PostgreSQLParserTest {
         assertNull(parsed.hosts().get(0).port());
         assertEquals("production", parsed.databaseName());
     }
-
 
     @Test
     void testPostgreSQLMultiHost() {
@@ -63,7 +59,6 @@ class PostgreSQLParserTest {
         assertEquals(5433, parsed.hosts().get(1).port());
     }
 
-
     @Test
     void testPostgreSQLWithSchema() {
 
@@ -74,11 +69,11 @@ class PostgreSQLParserTest {
         assertEquals("public", parsed.getPropertyValue("currentSchema"));
     }
 
-
     @Test
     void testPostgreSQLComplexProperties() {
 
-        String url = "jdbc:postgresql://localhost:5432/testdb?user=postgres&password=secret&ssl=true&sslmode=verify-full&sslcert=/path/to/cert";
+        String url =
+                "jdbc:postgresql://localhost:5432/testdb?user=postgres&password=secret&ssl=true&sslmode=verify-full&sslcert=/path/to/cert";
         JdbcUrl parsed = JdbcUrlParser.parse(url);
 
         assertEquals(5, parsed.properties().size());
@@ -88,7 +83,6 @@ class PostgreSQLParserTest {
         assertEquals("verify-full", parsed.getPropertyValue("sslmode"));
         assertEquals("/path/to/cert", parsed.getPropertyValue("sslcert"));
     }
-
 
     @Test
     void testPostgreSQLIPv6() {

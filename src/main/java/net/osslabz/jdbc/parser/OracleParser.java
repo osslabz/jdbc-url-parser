@@ -13,7 +13,6 @@ import net.osslabz.jdbc.JdbcUrlParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Parser for Oracle JDBC URLs.
  *
@@ -34,12 +33,10 @@ public class OracleParser extends AbstractUrlParser {
     // Pattern for thin driver with service name: @//host:port/serviceName or @host:port/serviceName
     private static final Pattern SERVICE_PATTERN = Pattern.compile("@/?/?([^/:]+):(\\d+)/(.+)");
 
-
     public OracleParser() {
 
         super(DatabaseProduct.ORACLE);
     }
-
 
     @Override
     public JdbcUrl parse(String url) {
@@ -73,7 +70,6 @@ public class OracleParser extends AbstractUrlParser {
             throw new JdbcUrlParseException(url, "Unsupported Oracle connection format");
         }
     }
-
 
     /**
      * Parses Oracle SID format: @host:port:SID or service name format @host:port/serviceName
@@ -112,7 +108,6 @@ public class OracleParser extends AbstractUrlParser {
         throw new JdbcUrlParseException(url, "Invalid Oracle SID or service name format");
     }
 
-
     /**
      * Parses Oracle service name format: @//host:port/serviceName
      */
@@ -134,7 +129,6 @@ public class OracleParser extends AbstractUrlParser {
 
         return new JdbcUrl(url, DatabaseProduct.ORACLE, protocol, List.of(host), serviceName, properties);
     }
-
 
     /**
      * Parses Oracle TNSNAMES descriptor format.

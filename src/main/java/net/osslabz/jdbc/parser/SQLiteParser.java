@@ -7,7 +7,6 @@ import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.PropertySource;
 
-
 /**
  * Parser for SQLite JDBC URLs.
  *
@@ -25,7 +24,6 @@ public class SQLiteParser extends AbstractUrlParser {
 
         super(DatabaseProduct.SQLITE);
     }
-
 
     @Override
     public JdbcUrl parse(String url) {

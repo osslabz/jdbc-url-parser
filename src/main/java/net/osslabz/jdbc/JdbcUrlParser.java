@@ -14,7 +14,6 @@ import net.osslabz.jdbc.parser.UrlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Main entry point for parsing JDBC URLs. This class provides a simple facade for parsing JDBC URLs of various database types.
  *
@@ -64,7 +63,6 @@ public class JdbcUrlParser {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 
-
     /**
      * Parses a JDBC URL into its components.
      *
@@ -103,7 +101,6 @@ public class JdbcUrlParser {
         throw new JdbcUrlParseException(url, "No parser available for database type: " + databaseProduct);
     }
 
-
     /**
      * Attempts to parse a JDBC URL, returning null if parsing fails instead of throwing an exception.
      *
@@ -120,7 +117,6 @@ public class JdbcUrlParser {
         }
     }
 
-
     /**
      * Checks if a string appears to be a valid JDBC URL (starts with "jdbc:").
      *
@@ -131,7 +127,6 @@ public class JdbcUrlParser {
 
         return url != null && url.toLowerCase().startsWith("jdbc:");
     }
-
 
     /**
      * Detects the database type from a JDBC URL without fully parsing it.

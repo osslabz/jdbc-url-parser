@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Tests for H2 Database JDBC URL parsing.
  */
@@ -24,7 +23,6 @@ class H2ParserTest {
         assertEquals("MEMORY", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testH2FileRelative() {
 
@@ -36,7 +34,6 @@ class H2ParserTest {
         assertEquals("FILE", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testH2FileAbsolute() {
 
@@ -46,7 +43,6 @@ class H2ParserTest {
         assertEquals("/data/mydb", parsed.databaseName());
         assertEquals("FILE", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testH2FileWithProperties() {
@@ -58,7 +54,6 @@ class H2ParserTest {
         assertEquals("MySQL", parsed.getPropertyValue("MODE"));
         assertEquals("TRUE", parsed.getPropertyValue("DATABASE_TO_LOWER"));
     }
-
 
     @Test
     void testH2TCP() {
@@ -74,7 +69,6 @@ class H2ParserTest {
         assertEquals("TCP", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testH2SSL() {
 
@@ -88,7 +82,6 @@ class H2ParserTest {
         assertEquals("SSL", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testH2InMemoryWithOptions() {
 
@@ -100,7 +93,6 @@ class H2ParserTest {
         assertEquals("MySQL", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testH2ImpliedFile() {
 
@@ -110,7 +102,6 @@ class H2ParserTest {
         assertEquals("/opt/databases/mydb", parsed.databaseName());
         assertEquals("FILE", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testH2WithQuestionMarkProperties() {

@@ -8,7 +8,6 @@ import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.PropertySource;
 
-
 /**
  * Parser for HSQLDB (HyperSQL) JDBC URLs.
  *
@@ -31,7 +30,6 @@ public class HSQLDBParser extends AbstractUrlParser {
         super(DatabaseProduct.HSQLDB);
     }
 
-
     @Override
     public JdbcUrl parse(String url) {
 
@@ -51,8 +49,10 @@ public class HSQLDBParser extends AbstractUrlParser {
         Map<String, JdbcProperty> properties = parseProperties(propsString, propertySource);
 
         // Check for network modes
-        if (mainPart.startsWith("hsql://") || mainPart.startsWith("hsqls://") ||
-            mainPart.startsWith("http://") || mainPart.startsWith("https://")) {
+        if (mainPart.startsWith("hsql://")
+                || mainPart.startsWith("hsqls://")
+                || mainPart.startsWith("http://")
+                || mainPart.startsWith("https://")) {
             return parseNetworkMode(url, protocol, mainPart, properties);
         }
 
@@ -76,11 +76,11 @@ public class HSQLDBParser extends AbstractUrlParser {
         return new JdbcUrl(url, dbType, protocol, List.of(), databasePath, properties);
     }
 
-
     /**
      * Parses HSQLDB in network mode.
      */
-    private JdbcUrl parseNetworkMode(String url, String protocol, String mainPart, Map<String, JdbcProperty> properties) {
+    private JdbcUrl parseNetworkMode(
+            String url, String protocol, String mainPart, Map<String, JdbcProperty> properties) {
 
         String scheme;
         String withoutScheme;

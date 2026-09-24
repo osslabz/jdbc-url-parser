@@ -1,6 +1,5 @@
 package net.osslabz.jdbc;
 
-
 /**
  * Indicates the source of a JDBC URL property based on RFC 3986 URI component terminology.
  *

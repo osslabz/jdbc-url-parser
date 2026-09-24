@@ -2,7 +2,6 @@ package net.osslabz.jdbc;
 
 import java.util.Objects;
 
-
 /**
  * Represents a JDBC URL property with its value and source origin.
  *

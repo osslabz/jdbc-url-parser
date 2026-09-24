@@ -8,7 +8,6 @@ import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.PropertySource;
 
-
 /**
  * Parser for Apache Derby JDBC URLs.
  *
@@ -29,7 +28,6 @@ public class DerbyParser extends AbstractUrlParser {
 
         super(DatabaseProduct.DERBY);
     }
-
 
     @Override
     public JdbcUrl parse(String url) {
@@ -62,7 +60,6 @@ public class DerbyParser extends AbstractUrlParser {
 
         return new JdbcUrl(url, dbType, protocol, List.of(), databasePath, properties);
     }
-
 
     /**
      * Parses Derby in network/client mode.

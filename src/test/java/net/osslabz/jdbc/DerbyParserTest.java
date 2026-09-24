@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Tests for Apache Derby JDBC URL parsing.
  */
@@ -24,7 +23,6 @@ class DerbyParserTest {
         assertEquals("EMBEDDED", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testDerbyEmbeddedWithCreate() {
 
@@ -36,7 +34,6 @@ class DerbyParserTest {
         assertEquals("EMBEDDED", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testDerbyEmbeddedPath() {
 
@@ -46,7 +43,6 @@ class DerbyParserTest {
         assertEquals("/data/databases/mydb", parsed.databaseName());
         assertEquals("EMBEDDED", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testDerbyInMemory() {
@@ -58,7 +54,6 @@ class DerbyParserTest {
         assertEquals("MEMORY", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testDerbyInMemoryWithCreate() {
 
@@ -69,7 +64,6 @@ class DerbyParserTest {
         assertEquals("true", parsed.getPropertyValue("create"));
         assertEquals("MEMORY", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testDerbyNetwork() {
@@ -84,7 +78,6 @@ class DerbyParserTest {
         assertEquals("NETWORK", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testDerbyNetworkWithProperties() {
 
@@ -97,7 +90,6 @@ class DerbyParserTest {
         assertEquals("true", parsed.getPropertyValue("create"));
         assertEquals("admin", parsed.getPropertyValue("user"));
     }
-
 
     @Test
     void testDerbyMultipleProperties() {
@@ -113,7 +105,6 @@ class DerbyParserTest {
         assertEquals("en_US", parsed.getPropertyValue("territory"));
         assertEquals("EMBEDDED", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testDerbyShutdown() {

@@ -56,12 +56,10 @@ public enum DatabaseProduct {
 
     private final String productIndicator;
 
-
     DatabaseProduct(String productIndicator) {
 
         this.productIndicator = productIndicator;
     }
-
 
     /**
      * Gets the product indicator for this database type.
@@ -72,7 +70,6 @@ public enum DatabaseProduct {
 
         return productIndicator;
     }
-
 
     /**
      * Gets the JDBC URL prefix for this database type.
@@ -86,7 +83,6 @@ public enum DatabaseProduct {
         }
         return "jdbc:" + productIndicator + ":";
     }
-
 
     /**
      * Detects the database type from a JDBC URL.

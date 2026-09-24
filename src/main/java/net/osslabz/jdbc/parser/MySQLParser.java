@@ -4,7 +4,6 @@ import net.osslabz.jdbc.DatabaseProduct;
 import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.JdbcUrlParseException;
 
-
 /**
  * Parser for MySQL and MariaDB JDBC URLs.
  *
@@ -22,7 +21,6 @@ public class MySQLParser extends AbstractUrlParser {
 
         super(DatabaseProduct.MYSQL, DatabaseProduct.MARIADB);
     }
-
 
     @Override
     public JdbcUrl parse(String url) {

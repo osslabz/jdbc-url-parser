@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Tests for Oracle JDBC URL parsing.
  */
@@ -26,7 +25,6 @@ class OracleParserTest {
         assertEquals("ORCL", parsed.getPropertyValue("SID"));
     }
 
-
     @Test
     void testOracleThinWithServiceName() {
 
@@ -40,7 +38,6 @@ class OracleParserTest {
         assertEquals("XEPDB1", parsed.getPropertyValue("SERVICE_NAME"));
     }
 
-
     @Test
     void testOracleWithServiceNameNoPort() {
 
@@ -52,11 +49,11 @@ class OracleParserTest {
         assertEquals("myservice", parsed.databaseName());
     }
 
-
     @Test
     void testOracleDescriptorFormat() {
 
-        String url = "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=myservice)))";
+        String url =
+                "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=myservice)))";
         JdbcUrl parsed = JdbcUrlParser.parse(url);
 
         assertEquals(DatabaseProduct.ORACLE, parsed.databaseProduct());
@@ -66,11 +63,11 @@ class OracleParserTest {
         assertTrue(parsed.properties().containsKey("DESCRIPTOR"));
     }
 
-
     @Test
     void testOracleDescriptorWithSID() {
 
-        String url = "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dbhost)(PORT=1521))(CONNECT_DATA=(SID=ORCL)))";
+        String url =
+                "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dbhost)(PORT=1521))(CONNECT_DATA=(SID=ORCL)))";
         JdbcUrl parsed = JdbcUrlParser.parse(url);
 
         assertEquals("dbhost", parsed.hosts().get(0).hostname());
@@ -79,18 +76,17 @@ class OracleParserTest {
         assertEquals("ORCL", parsed.getPropertyValue("SID"));
     }
 
-
     @Test
     void testOracleDescriptorCaseInsensitive() {
 
-        String url = "jdbc:oracle:thin:@(description=(address=(protocol=TCP)(host=myhost)(port=1522))(connect_data=(service_name=PROD)))";
+        String url =
+                "jdbc:oracle:thin:@(description=(address=(protocol=TCP)(host=myhost)(port=1522))(connect_data=(service_name=PROD)))";
         JdbcUrl parsed = JdbcUrlParser.parse(url);
 
         assertEquals("myhost", parsed.hosts().get(0).hostname());
         assertEquals(1522, parsed.hosts().get(0).port());
         assertEquals("PROD", parsed.databaseName());
     }
-
 
     @Test
     void testOracleOCIDriver() {

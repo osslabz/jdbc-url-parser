@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Tests for Microsoft SQL Server JDBC URL parsing.
  */
@@ -24,7 +23,6 @@ class SQLServerParserTest {
         assertEquals("mydb", parsed.databaseName());
     }
 
-
     @Test
     void testSQLServerWithProperties() {
 
@@ -35,7 +33,6 @@ class SQLServerParserTest {
         assertEquals("true", parsed.getPropertyValue("encrypt"));
         assertEquals("false", parsed.getPropertyValue("trustServerCertificate"));
     }
-
 
     @Test
     void testSQLServerWithInstanceName() {
@@ -49,7 +46,6 @@ class SQLServerParserTest {
         assertEquals("mydb", parsed.databaseName());
     }
 
-
     @Test
     void testSQLServerInstanceWithoutPort() {
 
@@ -60,7 +56,6 @@ class SQLServerParserTest {
         assertEquals("SQLEXPRESS", parsed.hosts().get(0).instanceName());
         assertEquals("mydb", parsed.databaseName());
     }
-
 
     @Test
     void testSQLServerDefaultPort() {
@@ -73,7 +68,6 @@ class SQLServerParserTest {
         assertEquals("production", parsed.databaseName());
     }
 
-
     @Test
     void testSQLServerWithDatabase() {
 
@@ -83,11 +77,11 @@ class SQLServerParserTest {
         assertEquals("testdb", parsed.databaseName());
     }
 
-
     @Test
     void testSQLServerComplexUrl() {
 
-        String url = "jdbc:sqlserver://myserver:1433;databaseName=AdventureWorks;user=sa;password=secret;encrypt=true;trustServerCertificate=true;loginTimeout=30";
+        String url =
+                "jdbc:sqlserver://myserver:1433;databaseName=AdventureWorks;user=sa;password=secret;encrypt=true;trustServerCertificate=true;loginTimeout=30";
         JdbcUrl parsed = JdbcUrlParser.parse(url);
 
         assertEquals("AdventureWorks", parsed.databaseName());
@@ -96,7 +90,6 @@ class SQLServerParserTest {
         assertEquals("true", parsed.getPropertyValue("encrypt"));
         assertEquals("30", parsed.getPropertyValue("loginTimeout"));
     }
-
 
     @Test
     void testSQLServerIntegratedSecurity() {

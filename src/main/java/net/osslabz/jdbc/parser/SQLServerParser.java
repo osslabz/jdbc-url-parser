@@ -8,7 +8,6 @@ import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.PropertySource;
 
-
 /**
  * Parser for Microsoft SQL Server JDBC URLs.
  *
@@ -27,7 +26,6 @@ public class SQLServerParser extends AbstractUrlParser {
 
         super(DatabaseProduct.SQLSERVER);
     }
-
 
     @Override
     public JdbcUrl parse(String url) {

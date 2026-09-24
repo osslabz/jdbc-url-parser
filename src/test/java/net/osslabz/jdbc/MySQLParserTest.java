@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Tests for MySQL and MariaDB JDBC URL parsing.
  */
@@ -27,7 +26,6 @@ class MySQLParserTest {
         assertTrue(parsed.properties().isEmpty());
     }
 
-
     @Test
     void testMySQLWithProperties() {
 
@@ -40,7 +38,6 @@ class MySQLParserTest {
         assertEquals("true", parsed.getPropertyValue("useSSL"));
         assertEquals("UTC", parsed.getPropertyValue("serverTimezone"));
     }
-
 
     @Test
     void testMySQLMultiHost() {
@@ -57,7 +54,6 @@ class MySQLParserTest {
         assertEquals("mydb", parsed.databaseName());
     }
 
-
     @Test
     void testMySQLWithoutPort() {
 
@@ -67,7 +63,6 @@ class MySQLParserTest {
         assertEquals("localhost", parsed.hosts().get(0).hostname());
         assertNull(parsed.hosts().get(0).port());
     }
-
 
     @Test
     void testMariaDBUrl() {
@@ -82,7 +77,6 @@ class MySQLParserTest {
         assertEquals("production", parsed.databaseName());
     }
 
-
     @Test
     void testMariaDBWithProperties() {
 
@@ -94,7 +88,6 @@ class MySQLParserTest {
         assertEquals("secret", parsed.getPropertyValue("password"));
     }
 
-
     @Test
     void testMySQLEmptyDatabase() {
 
@@ -104,11 +97,11 @@ class MySQLParserTest {
         assertEquals("", parsed.databaseName());
     }
 
-
     @Test
     void testMySQLComplexUrl() {
 
-        String url = "jdbc:mysql://primary:3306,replica1:3306,replica2:3306/mydb?useSSL=true&rewriteBatchedStatements=true";
+        String url =
+                "jdbc:mysql://primary:3306,replica1:3306,replica2:3306/mydb?useSSL=true&rewriteBatchedStatements=true";
         JdbcUrl parsed = JdbcUrlParser.parse(url);
 
         assertEquals(3, parsed.hosts().size());

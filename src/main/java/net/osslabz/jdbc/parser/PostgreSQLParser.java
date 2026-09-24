@@ -3,7 +3,6 @@ package net.osslabz.jdbc.parser;
 import net.osslabz.jdbc.DatabaseProduct;
 import net.osslabz.jdbc.JdbcUrl;
 
-
 /**
  * Parser for PostgreSQL JDBC URLs.
  *
@@ -21,7 +20,6 @@ public class PostgreSQLParser extends AbstractUrlParser {
 
         super(DatabaseProduct.POSTGRESQL);
     }
-
 
     @Override
     public JdbcUrl parse(String url) {

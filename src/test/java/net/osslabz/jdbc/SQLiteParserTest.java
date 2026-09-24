@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Tests for SQLite JDBC URL parsing.
  */
@@ -24,7 +23,6 @@ class SQLiteParserTest {
         assertEquals("FILE", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testSQLiteAbsolutePath() {
 
@@ -34,7 +32,6 @@ class SQLiteParserTest {
         assertEquals("/data/databases/mydb.db", parsed.databaseName());
         assertEquals("FILE", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testSQLiteWindowsPath() {
@@ -46,7 +43,6 @@ class SQLiteParserTest {
         assertEquals("FILE", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testSQLiteInMemory() {
 
@@ -57,7 +53,6 @@ class SQLiteParserTest {
         assertEquals("MEMORY", parsed.getPropertyValue("MODE"));
     }
 
-
     @Test
     void testSQLiteInMemoryAlternate() {
 
@@ -67,7 +62,6 @@ class SQLiteParserTest {
         assertEquals(":memory:", parsed.databaseName());
         assertEquals("MEMORY", parsed.getPropertyValue("MODE"));
     }
-
 
     @Test
     void testSQLiteWithProperties() {
@@ -80,7 +74,6 @@ class SQLiteParserTest {
         assertEquals("WAL", parsed.getPropertyValue("journal_mode"));
     }
 
-
     @Test
     void testSQLiteRelativePath() {
 
@@ -90,7 +83,6 @@ class SQLiteParserTest {
         assertEquals("../data/mydb.db", parsed.databaseName());
     }
 
-
     @Test
     void testSQLiteEmptyPath() {
 
@@ -99,7 +91,6 @@ class SQLiteParserTest {
 
         assertEquals("", parsed.databaseName());
     }
-
 
     @Test
     void testSQLiteComplexPath() {
