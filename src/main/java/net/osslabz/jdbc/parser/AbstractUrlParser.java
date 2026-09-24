@@ -82,7 +82,7 @@ public abstract class AbstractUrlParser implements UrlParser {
             return properties;
         }
 
-        String[] pairs = queryString.split("[&;]");
+        String[] pairs = queryString.split("[&;]", -1);
 
         for (String pair : pairs) {
             if (pair.isBlank()) {
@@ -206,7 +206,7 @@ public abstract class AbstractUrlParser implements UrlParser {
             return List.of();
         }
 
-        String[] hostParts = hostsString.split(",");
+        String[] hostParts = hostsString.split(",", -1);
         List<Host> hosts = new ArrayList<>();
 
         for (String hostPart : hostParts) {
