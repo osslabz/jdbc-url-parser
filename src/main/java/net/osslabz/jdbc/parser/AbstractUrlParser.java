@@ -68,7 +68,7 @@ public abstract class AbstractUrlParser implements UrlParser {
     }
 
     /**
-     * Parses properties from a query string (after '?') or path parameters (after ';'). Supports both '&' and ';' as separators. Always returns a mutable map so parsers can add additional properties.
+     * Parses properties from a query string (after '?') or path parameters (after ';'). Supports both '&amp;' and ';' as separators. Always returns a mutable map so parsers can add additional properties.
      *
      * @param queryString the query string without the leading '?' or ';'
      * @param source      the source of these properties (QUERY or PATH)

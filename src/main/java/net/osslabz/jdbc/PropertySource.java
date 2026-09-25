@@ -22,7 +22,7 @@ public enum PropertySource {
      * {@code useSSL} and {@code user} are QUERY properties.
      *
      * <p>Per RFC 3986 Section 3.4, the query component contains non-hierarchical data,
-     * often represented as key=value pairs separated by '&' or ';'.
+     * often represented as key=value pairs separated by '&amp;' or ';'.
      */
     QUERY,
 
