@@ -44,14 +44,14 @@ Both releases went out on 2025-10-30 and no functional change has landed since. 
 <dependency>
     <groupId>net.osslabz</groupId>
     <artifactId>jdbc-url-parser</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.3</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```gradle
-implementation 'net.osslabz:jdbc-url-parser:0.1.1'
+implementation 'net.osslabz:jdbc-url-parser:0.1.3'
 ```
 
 ### Snapshots
