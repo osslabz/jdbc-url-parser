@@ -11,7 +11,7 @@
 
 A comprehensive JDBC URL parser for Java 17+ that supports all databases autoconfigured by Spring Boot 3.5.
 
-Both releases went out on 2025-10-30 and no functional change has landed since. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 81 tests assert the parsed output for all nine. One other project of mine depends on it.
+Releases 0.1.0 and 0.1.1 went out on 2025-10-30, and 0.1.1 changed only CI and the pom description. Release 0.1.2 (2026-09-26) fixed URL prefix detection under a Turkish default locale and made the jar reproducible from its tag. Release 0.1.3 (2026-11-09) stopped shipping git.properties in the jar. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 81 tests assert the parsed output for all nine. One other project of mine depends on it.
 
 
 ## Features
