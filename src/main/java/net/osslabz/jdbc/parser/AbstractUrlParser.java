@@ -22,6 +22,8 @@ public abstract class AbstractUrlParser implements UrlParser {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractUrlParser.class);
 
+    private static final int MAX_PORT = 65535;
+
     protected final Set<DatabaseProduct> supportedTypes;
 
     protected AbstractUrlParser(DatabaseProduct... supportedTypes) {
@@ -130,10 +132,11 @@ public abstract class AbstractUrlParser implements UrlParser {
     /**
      * Parses a host:port string into a Host object.
      *
-     * @param hostString the host string (e.g., "localhost:3306")
+     * @param hostString  the host string (e.g., "localhost:3306")
+     * @param defaultPort the port the driver connects to when the URL names none
      * @return the Host object
      */
-    protected Host parseHost(String hostString) {
+    protected Host parseHost(String hostString, int defaultPort) {
 
         if (hostString == null || hostString.isBlank()) {
             throw new IllegalArgumentException("Host string cannot be null or blank");
@@ -146,19 +149,49 @@ public abstract class AbstractUrlParser implements UrlParser {
 
         // Standard hostname:port format
         int colonIndex = hostString.lastIndexOf(':');
+        // A colon inside a bracketed IPv6 literal is not a port separator
+        if (colonIndex < hostString.lastIndexOf(']')) {
+            colonIndex = -1;
+        }
         if (colonIndex > 0 && colonIndex < hostString.length() - 1) {
             String hostname = hostString.substring(0, colonIndex);
-            String portString = hostString.substring(colonIndex + 1);
-            try {
-                int port = Integer.parseInt(portString);
-                return Host.of(hostname, port);
-            } catch (NumberFormatException e) {
-                log.debug("Invalid port number in host string: {}", hostString);
-                return Host.of(hostString);
-            }
+            return Host.of(hostname, parsePort(hostString, hostString.substring(colonIndex + 1)));
         }
 
-        return Host.of(hostString);
+        return Host.of(hostString, defaultPort);
+    }
+
+    /**
+     * Parses a port the way the drivers do: {@code Integer.parseInt} (a leading '+' is accepted) within 0..65535.
+     *
+     * @param url      the URL being parsed, for the error message
+     * @param portText the text after the colon
+     * @return the port
+     * @throws JdbcUrlParseException if the text is not a number or out of range
+     */
+    protected static int parsePort(String url, String portText) {
+
+        try {
+            return requirePort(url, Integer.parseInt(portText));
+        } catch (NumberFormatException e) {
+            throw new JdbcUrlParseException(url, "Invalid port: " + portText, e);
+        }
+    }
+
+    /**
+     * Checks that an already decoded port lies within 0..65535.
+     *
+     * @param url  the URL being parsed, for the error message
+     * @param port the decoded port
+     * @return the port
+     * @throws JdbcUrlParseException if the port is out of range
+     */
+    protected static int requirePort(String url, int port) {
+
+        if (port < 0 || port > MAX_PORT) {
+            throw new JdbcUrlParseException(url, "Invalid port: " + port);
+        }
+        return port;
     }
 
     /**
@@ -198,9 +231,10 @@ public abstract class AbstractUrlParser implements UrlParser {
      * Parses multiple hosts separated by commas (for multi-host URLs).
      *
      * @param hostsString the hosts string (e.g., "host1:3306,host2:3306")
+     * @param defaultPort the port the driver connects to for a host that names none
      * @return list of Host objects
      */
-    protected List<Host> parseMultipleHosts(String hostsString) {
+    protected List<Host> parseMultipleHosts(String hostsString, int defaultPort) {
 
         if (hostsString == null || hostsString.isBlank()) {
             return List.of();
@@ -212,7 +246,7 @@ public abstract class AbstractUrlParser implements UrlParser {
         for (String hostPart : hostParts) {
             String trimmed = hostPart.trim();
             if (!trimmed.isBlank()) {
-                hosts.add(parseHost(trimmed));
+                hosts.add(parseHost(trimmed, defaultPort));
             }
         }
 
@@ -280,9 +314,10 @@ public abstract class AbstractUrlParser implements UrlParser {
      *
      * @param url          the original JDBC URL
      * @param databaseProduct the database type
+     * @param defaultPort  the port the driver connects to for a host that names none
      * @return parsed JdbcUrl
      */
-    protected JdbcUrl parseStandardNetworkUrl(String url, DatabaseProduct databaseProduct) {
+    protected JdbcUrl parseStandardNetworkUrl(String url, DatabaseProduct databaseProduct, int defaultPort) {
 
         validateJdbcPrefix(url);
 
@@ -308,7 +343,7 @@ public abstract class AbstractUrlParser implements UrlParser {
         String databaseName = hostAndDb.length > 1 ? hostAndDb[1] : "";
 
         // Parse hosts (supports multiple hosts for clustering/failover)
-        List<Host> hosts = parseMultipleHosts(hostsString);
+        List<Host> hosts = parseMultipleHosts(hostsString, defaultPort);
 
         return new JdbcUrl(url, databaseProduct, protocol, hosts, databaseName, properties);
     }

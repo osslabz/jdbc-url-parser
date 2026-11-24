@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
  */
 public class OracleParser extends AbstractUrlParser {
 
+    static final int DEFAULT_PORT = 1521;
+
     private static final Logger log = LoggerFactory.getLogger(OracleParser.class);
 
     // Pattern for thin driver with SID: @host:port:SID
@@ -79,7 +81,7 @@ public class OracleParser extends AbstractUrlParser {
         Matcher serviceMatcher = SERVICE_PATTERN.matcher(connectionInfo);
         if (serviceMatcher.matches()) {
             String hostname = serviceMatcher.group(1);
-            int port = Integer.parseInt(serviceMatcher.group(2));
+            int port = parsePort(url, serviceMatcher.group(2));
             String serviceName = serviceMatcher.group(3);
 
             Host host = Host.of(hostname, port);
@@ -94,7 +96,7 @@ public class OracleParser extends AbstractUrlParser {
         Matcher sidMatcher = SID_PATTERN.matcher(connectionInfo);
         if (sidMatcher.matches()) {
             String hostname = sidMatcher.group(1);
-            int port = Integer.parseInt(sidMatcher.group(2));
+            int port = parsePort(url, sidMatcher.group(2));
             String sid = sidMatcher.group(3);
 
             Host host = Host.of(hostname, port);
@@ -119,7 +121,7 @@ public class OracleParser extends AbstractUrlParser {
         }
 
         String hostname = matcher.group(1);
-        int port = Integer.parseInt(matcher.group(2));
+        int port = parsePort(url, matcher.group(2));
         String serviceName = matcher.group(3);
 
         Host host = Host.of(hostname, port);
@@ -142,7 +144,7 @@ public class OracleParser extends AbstractUrlParser {
         addDerivedProperty(properties, "DRIVER_TYPE", driverType);
 
         String hostname = null;
-        Integer port = null;
+        int port = DEFAULT_PORT;
         String databaseName = null;
 
         // Extract HOST
@@ -156,7 +158,7 @@ public class OracleParser extends AbstractUrlParser {
         Pattern portPattern = Pattern.compile("\\(PORT\\s*=\\s*(\\d+)\\)", Pattern.CASE_INSENSITIVE);
         Matcher portMatcher = portPattern.matcher(connectionInfo);
         if (portMatcher.find()) {
-            port = Integer.parseInt(portMatcher.group(1));
+            port = parsePort(url, portMatcher.group(1));
         }
 
         // Extract SERVICE_NAME or SID
@@ -177,8 +179,7 @@ public class OracleParser extends AbstractUrlParser {
         // Create host if we found hostname
         List<Host> hosts = List.of();
         if (hostname != null) {
-            Host host = port != null ? Host.of(hostname, port) : Host.of(hostname);
-            hosts = List.of(host);
+            hosts = List.of(Host.of(hostname, port));
         }
 
         if (databaseName == null) {

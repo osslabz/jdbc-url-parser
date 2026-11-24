@@ -24,6 +24,8 @@ import net.osslabz.jdbc.PropertySource;
  */
 public class DerbyParser extends AbstractUrlParser {
 
+    static final int DEFAULT_NETWORK_PORT = 1527;
+
     public DerbyParser() {
 
         super(DatabaseProduct.DERBY);
@@ -80,7 +82,7 @@ public class DerbyParser extends AbstractUrlParser {
         String hostString = hostAndDb[0];
         String databaseName = hostAndDb.length > 1 ? hostAndDb[1] : "";
 
-        Host host = parseHost(hostString);
+        Host host = parseHost(hostString, DEFAULT_NETWORK_PORT);
         addDerivedProperty(properties, "MODE", "NETWORK");
 
         return new JdbcUrl(url, DatabaseProduct.DERBY, protocol, List.of(host), databaseName, properties);

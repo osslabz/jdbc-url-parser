@@ -23,6 +23,8 @@ import net.osslabz.jdbc.PropertySource;
  */
 public class H2Parser extends AbstractUrlParser {
 
+    static final int DEFAULT_TCP_PORT = 9092;
+
     public H2Parser() {
 
         super(DatabaseProduct.H2);
@@ -88,7 +90,7 @@ public class H2Parser extends AbstractUrlParser {
         String hostString = hostAndDb[0];
         String databaseName = hostAndDb.length > 1 ? hostAndDb[1] : "";
 
-        Host host = parseHost(hostString);
+        Host host = parseHost(hostString, DEFAULT_TCP_PORT);
         addDerivedProperty(properties, "MODE", isSsl ? "SSL" : "TCP");
 
         return new JdbcUrl(url, DatabaseProduct.H2, protocol, List.of(host), databaseName, properties);

@@ -1,9 +1,16 @@
 package net.osslabz.jdbc;
 
+import static net.osslabz.jdbc.ParsedUrls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for Oracle JDBC URL parsing.
@@ -96,5 +103,29 @@ class OracleParserTest {
 
         assertEquals(DatabaseProduct.ORACLE, parsed.databaseProduct());
         assertEquals("mydb", parsed.databaseName());
+    }
+
+    static Stream<Arguments> defaultPortCases() {
+
+        return Stream.of(Arguments.of(
+                "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=db))(CONNECT_DATA=(SERVICE_NAME=svc)))",
+                List.of(host("db", 1521)),
+                "svc",
+                props(
+                        "DRIVER_TYPE",
+                        derived("thin"),
+                        "SERVICE_NAME",
+                        descriptor("svc"),
+                        "DESCRIPTOR",
+                        descriptor(
+                                "@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=db))(CONNECT_DATA=(SERVICE_NAME=svc)))"))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("defaultPortCases")
+    void defaultPortIsReported(
+            String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
     }
 }

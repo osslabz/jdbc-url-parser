@@ -1,10 +1,16 @@
 package net.osslabz.jdbc;
 
+import static net.osslabz.jdbc.ParsedUrls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for MySQL and MariaDB JDBC URL parsing.
@@ -61,7 +67,7 @@ class MySQLParserTest {
         JdbcUrl parsed = JdbcUrlParser.parse(url);
 
         assertEquals("localhost", parsed.hosts().get(0).hostname());
-        assertNull(parsed.hosts().get(0).port());
+        assertEquals(3306, parsed.hosts().get(0).port());
     }
 
     @Test
@@ -110,5 +116,20 @@ class MySQLParserTest {
         assertEquals("replica2", parsed.hosts().get(2).hostname());
         assertEquals("true", parsed.getPropertyValue("useSSL"));
         assertEquals("true", parsed.getPropertyValue("rewriteBatchedStatements"));
+    }
+
+    static Stream<Arguments> defaultPortCases() {
+
+        return Stream.of(
+                Arguments.of("jdbc:mysql://localhost/mydb", List.of(host("localhost", 3306)), "mydb", props()),
+                Arguments.of("jdbc:mariadb://db/x", List.of(host("db", 3306)), "x", props()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("defaultPortCases")
+    void defaultPortIsReported(
+            String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
     }
 }

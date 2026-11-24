@@ -1,9 +1,16 @@
 package net.osslabz.jdbc;
 
+import static net.osslabz.jdbc.ParsedUrls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for H2 Database JDBC URL parsing.
@@ -112,5 +119,20 @@ class H2ParserTest {
         assertEquals("testdb", parsed.databaseName());
         assertEquals("PostgreSQL", parsed.getPropertyValue("MODE"));
         assertEquals("TRUE", parsed.getPropertyValue("DATABASE_TO_LOWER"));
+    }
+
+    static Stream<Arguments> defaultPortCases() {
+
+        return Stream.of(
+                Arguments.of("jdbc:h2:tcp://db/x", List.of(host("db", 9092)), "x", props("MODE", derived("TCP"))),
+                Arguments.of("jdbc:h2:ssl://db/x", List.of(host("db", 9092)), "x", props("MODE", derived("SSL"))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("defaultPortCases")
+    void defaultPortIsReported(
+            String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
     }
 }

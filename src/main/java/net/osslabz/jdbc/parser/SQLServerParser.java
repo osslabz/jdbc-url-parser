@@ -22,6 +22,8 @@ import net.osslabz.jdbc.PropertySource;
  */
 public class SQLServerParser extends AbstractUrlParser {
 
+    static final int DEFAULT_PORT = 1433;
+
     public SQLServerParser() {
 
         super(DatabaseProduct.SQLSERVER);
@@ -48,7 +50,7 @@ public class SQLServerParser extends AbstractUrlParser {
         String propertiesPart = parts.length > 1 ? parts[1] : "";
 
         // Parse host (may include instance name with backslash)
-        Host host = parseHost(hostPart);
+        Host host = parseHost(hostPart, DEFAULT_PORT);
 
         // Parse properties (semicolon-separated path parameters)
         Map<String, JdbcProperty> properties = parseProperties(propertiesPart, PropertySource.PATH);

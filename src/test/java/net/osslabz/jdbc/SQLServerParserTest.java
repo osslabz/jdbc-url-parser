@@ -1,9 +1,15 @@
 package net.osslabz.jdbc;
 
+import static net.osslabz.jdbc.ParsedUrls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for Microsoft SQL Server JDBC URL parsing.
@@ -64,7 +70,7 @@ class SQLServerParserTest {
         JdbcUrl parsed = JdbcUrlParser.parse(url);
 
         assertEquals("dbserver", parsed.hosts().get(0).hostname());
-        assertNull(parsed.hosts().get(0).port());
+        assertEquals(1433, parsed.hosts().get(0).port());
         assertEquals("production", parsed.databaseName());
     }
 
@@ -99,5 +105,22 @@ class SQLServerParserTest {
 
         assertEquals("mydb", parsed.databaseName());
         assertEquals("true", parsed.getPropertyValue("integratedSecurity"));
+    }
+
+    static Stream<Arguments> defaultPortCases() {
+
+        return Stream.of(Arguments.of(
+                "jdbc:sqlserver://dbserver;databaseName=production",
+                List.of(host("dbserver", 1433)),
+                "production",
+                props("databaseName", path("production"))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("defaultPortCases")
+    void defaultPortIsReported(
+            String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
     }
 }

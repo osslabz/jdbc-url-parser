@@ -26,6 +26,11 @@ import net.osslabz.jdbc.PropertySource;
  */
 public class HSQLDBParser extends AbstractUrlParser {
 
+    static final int DEFAULT_HSQL_PORT = 9001;
+    static final int DEFAULT_HSQLS_PORT = 554;
+    static final int DEFAULT_HTTP_PORT = 80;
+    static final int DEFAULT_HTTPS_PORT = 443;
+
     public HSQLDBParser() {
 
         super(DatabaseProduct.HSQLDB);
@@ -85,26 +90,31 @@ public class HSQLDBParser extends AbstractUrlParser {
 
         String scheme;
         String withoutScheme;
+        int defaultPort;
 
         if (mainPart.startsWith("hsqls://")) {
             scheme = "hsqls";
             withoutScheme = mainPart.substring(8);
+            defaultPort = DEFAULT_HSQLS_PORT;
         } else if (mainPart.startsWith("hsql://")) {
             scheme = "hsql";
             withoutScheme = mainPart.substring(7);
+            defaultPort = DEFAULT_HSQL_PORT;
         } else if (mainPart.startsWith("https://")) {
             scheme = "https";
             withoutScheme = mainPart.substring(8);
+            defaultPort = DEFAULT_HTTPS_PORT;
         } else { // http://
             scheme = "http";
             withoutScheme = mainPart.substring(7);
+            defaultPort = DEFAULT_HTTP_PORT;
         }
 
         String[] hostAndDb = splitFirst(withoutScheme, '/');
         String hostString = hostAndDb[0];
         String databaseName = hostAndDb.length > 1 ? hostAndDb[1] : "";
 
-        Host host = parseHost(hostString);
+        Host host = parseHost(hostString, defaultPort);
         addDerivedProperty(properties, "MODE", scheme.toUpperCase(Locale.ROOT));
 
         return new JdbcUrl(url, DatabaseProduct.HSQLDB, protocol, List.of(host), databaseName, properties);

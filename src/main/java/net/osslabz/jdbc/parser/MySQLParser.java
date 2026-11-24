@@ -17,6 +17,8 @@ import net.osslabz.jdbc.JdbcUrlParseException;
  */
 public class MySQLParser extends AbstractUrlParser {
 
+    static final int DEFAULT_PORT = 3306;
+
     public MySQLParser() {
 
         super(DatabaseProduct.MYSQL, DatabaseProduct.MARIADB);
@@ -30,6 +32,6 @@ public class MySQLParser extends AbstractUrlParser {
             throw new JdbcUrlParseException(url, "Unsupported database type for MySQL parser: " + dbType);
         }
 
-        return parseStandardNetworkUrl(url, dbType);
+        return parseStandardNetworkUrl(url, dbType, DEFAULT_PORT);
     }
 }

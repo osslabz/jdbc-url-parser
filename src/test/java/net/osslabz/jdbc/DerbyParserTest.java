@@ -1,9 +1,16 @@
 package net.osslabz.jdbc;
 
+import static net.osslabz.jdbc.ParsedUrls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for Apache Derby JDBC URL parsing.
@@ -114,5 +121,19 @@ class DerbyParserTest {
 
         assertEquals("mydb", parsed.databaseName());
         assertEquals("true", parsed.getPropertyValue("shutdown"));
+    }
+
+    static Stream<Arguments> defaultPortCases() {
+
+        return Stream.of(
+                Arguments.of("jdbc:derby://db/x", List.of(host("db", 1527)), "x", props("MODE", derived("NETWORK"))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("defaultPortCases")
+    void defaultPortIsReported(
+            String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
     }
 }

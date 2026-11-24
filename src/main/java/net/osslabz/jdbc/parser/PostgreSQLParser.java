@@ -16,6 +16,8 @@ import net.osslabz.jdbc.JdbcUrl;
  */
 public class PostgreSQLParser extends AbstractUrlParser {
 
+    static final int DEFAULT_PORT = 5432;
+
     public PostgreSQLParser() {
 
         super(DatabaseProduct.POSTGRESQL);
@@ -24,6 +26,6 @@ public class PostgreSQLParser extends AbstractUrlParser {
     @Override
     public JdbcUrl parse(String url) {
 
-        return parseStandardNetworkUrl(url, DatabaseProduct.POSTGRESQL);
+        return parseStandardNetworkUrl(url, DatabaseProduct.POSTGRESQL, DEFAULT_PORT);
     }
 }

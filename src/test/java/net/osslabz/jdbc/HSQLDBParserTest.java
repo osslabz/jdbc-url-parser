@@ -1,9 +1,16 @@
 package net.osslabz.jdbc;
 
+import static net.osslabz.jdbc.ParsedUrls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for HSQLDB (HyperSQL) JDBC URL parsing.
@@ -124,5 +131,24 @@ class HSQLDBParserTest {
 
         assertEquals("testdb", parsed.databaseName());
         assertEquals("true", parsed.getPropertyValue("shutdown"));
+    }
+
+    static Stream<Arguments> defaultPortCases() {
+
+        return Stream.of(
+                Arguments.of("jdbc:hsqldb:hsql://db/x", List.of(host("db", 9001)), "x", props("MODE", derived("HSQL"))),
+                Arguments.of(
+                        "jdbc:hsqldb:hsqls://db/x", List.of(host("db", 554)), "x", props("MODE", derived("HSQLS"))),
+                Arguments.of("jdbc:hsqldb:http://db/x", List.of(host("db", 80)), "x", props("MODE", derived("HTTP"))),
+                Arguments.of(
+                        "jdbc:hsqldb:https://db/x", List.of(host("db", 443)), "x", props("MODE", derived("HTTPS"))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("defaultPortCases")
+    void defaultPortIsReported(
+            String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
     }
 }
