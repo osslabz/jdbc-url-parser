@@ -126,6 +126,51 @@ class MariaDBParserTest {
         assertParsed(url, hosts, databaseName, properties);
     }
 
+    static Stream<Arguments> subProtocolReadings() {
+
+        List<Host> two = List.of(host("db1", 3306), host("db2", 3306));
+        return Stream.of(
+                Arguments.of(
+                        "jdbc:mariadb:replication://db1,db2/x?user=ZUSR&password=S3Cx",
+                        "jdbc:mariadb:replication:",
+                        two,
+                        "x",
+                        props("user", query("ZUSR"), "password", query("S3Cx"))),
+                Arguments.of(
+                        "jdbc:mariadb:loadbalance://db1,db2/shop", "jdbc:mariadb:loadbalance:", two, "shop", props()),
+                Arguments.of(
+                        "jdbc:mariadb:sequential://db1,db2/shop", "jdbc:mariadb:sequential:", two, "shop", props()),
+                Arguments.of(
+                        "jdbc:mariadb:load-balance-read://db1,db2/shop",
+                        "jdbc:mariadb:load-balance-read:",
+                        two,
+                        "shop",
+                        props()),
+                Arguments.of(
+                        "jdbc:mariadb:load_balance_read://db1,db2/shop",
+                        "jdbc:mariadb:load_balance_read:",
+                        two,
+                        "shop",
+                        props()),
+                Arguments.of(
+                        "jdbc:mariadb:load-balance://db1,db2/shop", "jdbc:mariadb:load-balance:", two, "shop", props()),
+                Arguments.of("jdbc:mariadb:none://db1,db2/shop", "jdbc:mariadb:none:", two, "shop", props()),
+                Arguments.of("jdbc:mariadb:failover://db1,db2/shop", "jdbc:mariadb:failover:", two, "shop", props()),
+                Arguments.of(
+                        "jdbc:mariadb:REPLICATION://db1,db2/shop", "jdbc:mariadb:replication:", two, "shop", props()),
+                Arguments.of(
+                        "jdbc:mariadb:replication//db1,db2/shop", "jdbc:mariadb:replication:", two, "shop", props()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("subProtocolReadings")
+    void readsSubProtocols(
+            String url, String protocol, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
+        assertEquals(protocol, JdbcUrlParser.parse(url).protocol());
+    }
+
     static Stream<String> driverRejections() {
 
         return Stream.of(
@@ -153,7 +198,14 @@ class MariaDBParserTest {
                 "jdbc:mariadb://address=(port=3307)/x",
                 "jdbc:mariadb:///x?localSocket=",
                 "jdbc:mariadb://ADDRESS=(host=db)/x",
-                "jdbc:mariadb:x//db/x");
+                "jdbc:mariadb:x//db/x",
+                "jdbc:mariadb:aurora://db/shop",
+                "jdbc:mariadb:bogus://db1/shop",
+                "jdbc:mariadb:loadbalanceread://db/shop",
+                "jdbc:mariadb:load_balance://db/shop",
+                "jdbc:mariadb:replication",
+                "jdbc:mariadb:replication:",
+                "jdbc:mariadb:sequential://ZUSR:S3Cx@db/shop");
     }
 
     @ParameterizedTest

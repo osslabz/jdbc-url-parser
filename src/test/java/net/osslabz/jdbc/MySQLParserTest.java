@@ -458,6 +458,44 @@ class MySQLParserTest {
         assertEquals("jdbc:mysql:", JdbcUrlParser.parse(url).protocol());
     }
 
+    static Stream<Arguments> subProtocolReadings() {
+
+        return Stream.of(
+                Arguments.of(
+                        "jdbc:mysql:loadbalance://ZUSR:S3Cx@db1,db2/x",
+                        "jdbc:mysql:loadbalance:",
+                        List.of(host("db1", 3306), host("db2", 3306)),
+                        "x",
+                        props("user", authority("ZUSR"), "password", authority("S3Cx"))),
+                Arguments.of(
+                        "jdbc:mysql:replication://(host=r,type=REPLICA),(host=s,type=SOURCE)/shop",
+                        "jdbc:mysql:replication:",
+                        List.of(host("r", 3306), host("s", 3306)),
+                        "shop",
+                        props("host", authority("r"), "type", authority("REPLICA"))),
+                Arguments.of(
+                        "jdbc:mysql:LOADBALANCE://h1/shop",
+                        "jdbc:mysql:loadbalance:",
+                        List.of(host("h1", 3306)),
+                        "shop",
+                        props()),
+                Arguments.of(
+                        "jdbc:mysql:replication:/db/shop",
+                        "jdbc:mysql:replication:",
+                        List.of(host("localhost", 3306)),
+                        "db/shop",
+                        props()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("subProtocolReadings")
+    void readsSubProtocols(
+            String url, String protocol, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
+        assertEquals(protocol, JdbcUrlParser.parse(url).protocol());
+    }
+
     static Stream<String> driverRejections() {
 
         return Stream.of(
@@ -477,7 +515,10 @@ class MySQLParserTest {
                 "jdbc:mysql:db/shop",
                 "jdbc:mysql:ZUSR:S3Cx@db/shop",
                 "jdbc:mysql:sequential://db",
+                "jdbc:mysql:sequential://h1,h2/shop",
                 "jdbc:mysql:aurora://db",
+                "jdbc:mysql:aurora://h1/shop",
+                "jdbc:mysql:loadbalance:x://h1/shop",
                 "jdbc:mysql://db/shop?dnsSrv=true",
                 "jdbc:mysql://db/shop?dnsSrv=Yes",
                 "jdbc:mysql://db/shop?dns%53rv=true",

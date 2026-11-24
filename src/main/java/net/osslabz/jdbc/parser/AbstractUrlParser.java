@@ -72,6 +72,18 @@ public abstract class AbstractUrlParser implements UrlParser {
     }
 
     /**
+     * Appends a sub-protocol to a protocol such as {@code jdbc:mysql:}.
+     *
+     * @param protocol    the protocol, ending in ':'
+     * @param subProtocol the sub-protocol without colons, empty when the URL has none
+     * @return the protocol, followed by the sub-protocol and ':' when there is one
+     */
+    protected static String withSubProtocol(String protocol, String subProtocol) {
+
+        return subProtocol.isEmpty() ? protocol : protocol + subProtocol + ":";
+    }
+
+    /**
      * Parses properties from a query string (after '?') or path parameters (after ';'). Supports both '&amp;' and ';' as separators. Always returns a mutable map so parsers can add additional properties.
      *
      * @param queryString the query string without the leading '?' or ';'

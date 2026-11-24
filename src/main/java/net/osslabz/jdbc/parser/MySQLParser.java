@@ -31,6 +31,7 @@ import net.osslabz.jdbc.PropertySource;
  *   <li>jdbc:mysql://address=(host=host)(port=port)(user=user)/database (host attributes)</li>
  *   <li>jdbc:mysql://(host=host,port=port,user=user)/database (host attributes)</li>
  *   <li>jdbc:mysql://user:password@[host1,host2]/database (host list sharing one userinfo)</li>
+ *   <li>jdbc:mysql:loadbalance://host1,host2/database and jdbc:mysql:replication://host1,host2/database</li>
  * </ul>
  *
  * <p>Host, path and query are percent-decoded. The query keys {@code host}, {@code port} and {@code dbname}, in any
@@ -43,6 +44,8 @@ public class MySQLParser extends AbstractUrlParser {
     static final int DEFAULT_PORT = 3306;
 
     private static final String PREFIX = "jdbc:mysql:";
+
+    private static final List<String> SUB_PROTOCOLS = List.of("loadbalance", "replication");
 
     private static final String DEFAULT_HOST = "localhost";
 
@@ -76,10 +79,7 @@ public class MySQLParser extends AbstractUrlParser {
         if (!sections.matches()) {
             throw new JdbcUrlParseException(url, "Malformed MySQL URL");
         }
-        String scheme = sections.group("scheme");
-        if (!PREFIX.equalsIgnoreCase(scheme)) {
-            throw new JdbcUrlParseException(url, "Unsupported MySQL URL scheme: " + scheme);
-        }
+        String subProtocol = subProtocol(url, sections.group("scheme"));
         String path = sections.group("path");
         String pathDatabase = path == null ? "" : percentDecode(url, path).trim();
 
@@ -96,7 +96,20 @@ public class MySQLParser extends AbstractUrlParser {
 
         DatabaseProduct dbType = DatabaseProduct.MYSQL;
         String database = databaseName(hostOptions(query, primary), pathDatabase);
-        return new JdbcUrl(url, dbType, extractProtocol(url, dbType), hosts, database, properties);
+        String protocol = withSubProtocol(extractProtocol(url, dbType), subProtocol);
+        return new JdbcUrl(url, dbType, protocol, hosts, database, properties);
+    }
+
+    // The driver's ConnectionUrl.Type matches the scheme case-insensitively; sequential and aurora are not among them.
+    private static String subProtocol(String url, String scheme) {
+
+        if (PREFIX.equalsIgnoreCase(scheme)) {
+            return "";
+        }
+        return SUB_PROTOCOLS.stream()
+                .filter(subProtocol -> (PREFIX + subProtocol + ":").equalsIgnoreCase(scheme))
+                .findFirst()
+                .orElseThrow(() -> new JdbcUrlParseException(url, "Unsupported MySQL URL scheme: " + scheme));
     }
 
     /**

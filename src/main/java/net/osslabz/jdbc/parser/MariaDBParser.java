@@ -23,6 +23,7 @@ import net.osslabz.jdbc.PropertySource;
  *   <li>jdbc:mariadb://host1:port1,host2:port2/database?param=value (multi-host)</li>
  *   <li>jdbc:mariadb://address=(host=host)(port=port),address=(host=host)/database</li>
  *   <li>jdbc:mariadb:///database?localSocket=path (no network host)</li>
+ *   <li>jdbc:mariadb:replication://host1,host2/database (also sequential, loadbalance, load-balance-read, failover)</li>
  * </ul>
  *
  * <p>Nothing is percent-decoded. A non-empty query {@code database} value, in any case, overrides the database
@@ -44,6 +45,18 @@ public class MariaDBParser extends AbstractUrlParser {
 
     private static final Pattern ADDRESS_GROUP_BOUNDARY = Pattern.compile("(?=\\()|(?<=\\))");
 
+    // The driver's HaMode names and values; "failover" is its alias for load balancing.
+    private static final List<String> HA_MODES = List.of(
+            "replication",
+            "sequential",
+            "load-balance-read",
+            "load_balance_read",
+            "load-balance",
+            "loadbalance",
+            "none",
+            "failover",
+            "");
+
     private static final List<String> ADDRESS_TYPES = List.of("master", "primary", "slave", "replica");
 
     public MariaDBParser() {
@@ -60,7 +73,7 @@ public class MariaDBParser extends AbstractUrlParser {
         if (networkStart < 0) {
             throw new JdbcUrlParseException(url, "'//' must follow the prefix");
         }
-        haMode(url, url.substring(PREFIX.length(), networkStart));
+        String haMode = haMode(url, url.substring(PREFIX.length(), networkStart));
 
         String remainder = url.substring(networkStart + NETWORK_START.length());
         int hostSpecEnd = hostSpecEnd(url, remainder);
@@ -74,26 +87,29 @@ public class MariaDBParser extends AbstractUrlParser {
         return new JdbcUrl(
                 url,
                 dbType,
-                extractProtocol(url, dbType),
+                withSubProtocol(extractProtocol(url, dbType), haMode),
                 hosts,
                 databaseName(properties, pathDatabase(afterHosts, queryStart)),
                 properties);
     }
 
     /**
-     * Reads the sub-protocol written between the prefix and '//'.
+     * Reads the sub-protocol written between the prefix and '//'. The driver takes the text up to the next ':' and
+     * matches it case-insensitively against its HA mode names, the empty text meaning none.
      *
      * @param url     the URL being parsed, for the error message
      * @param between the text between {@code jdbc:mariadb:} and '//'
-     * @return the sub-protocol text, empty when none is written
-     * @throws JdbcUrlParseException if a sub-protocol is written
+     * @return the matching HA mode spelling as listed here, empty when none is written
+     * @throws JdbcUrlParseException if the text names no HA mode
      */
     String haMode(String url, String between) {
 
-        if (!between.isEmpty()) {
-            throw new JdbcUrlParseException(url, "Unsupported sub-protocol: " + between);
-        }
-        return "";
+        int modeEnd = between.indexOf(':');
+        String written = modeEnd < 0 ? between : between.substring(0, modeEnd);
+        return HA_MODES.stream()
+                .filter(mode -> mode.equalsIgnoreCase(written))
+                .findFirst()
+                .orElseThrow(() -> new JdbcUrlParseException(url, "Unsupported sub-protocol: " + written));
     }
 
     // The host spec ends at the first '/' after any address=(...) blocks, or at the first '?' if that comes earlier.
