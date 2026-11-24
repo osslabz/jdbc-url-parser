@@ -1,6 +1,5 @@
 package net.osslabz.jdbc.parser;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,8 +34,6 @@ public class HSQLDBParser extends AbstractUrlParser {
     static final int DEFAULT_HSQLS_PORT = 554;
     static final int DEFAULT_HTTP_PORT = 80;
     static final int DEFAULT_HTTPS_PORT = 443;
-
-    private static final String MODE = "MODE";
 
     private static final String DEFAULT_HOST = "localhost";
 
@@ -75,8 +72,8 @@ public class HSQLDBParser extends AbstractUrlParser {
         int settingsStart = url.indexOf(';');
         String location =
                 settingsStart < 0 ? url.substring(protocol.length()) : url.substring(protocol.length(), settingsStart);
-        Map<String, JdbcProperty> properties =
-                settingsStart < 0 ? new LinkedHashMap<>() : readSettings(url.substring(settingsStart + 1));
+        Map<String, JdbcProperty> properties = toTrimmedPathProperties(
+                settingsStart < 0 ? List.of() : splitPairs(url.substring(settingsStart + 1), ';'));
 
         String foldedLocation = location.toLowerCase(Locale.ROOT);
         for (Server server : Server.values()) {
@@ -88,40 +85,27 @@ public class HSQLDBParser extends AbstractUrlParser {
         return new JdbcUrl(url, DatabaseProduct.HSQLDB, protocol, List.of(), database, properties);
     }
 
-    private static Map<String, JdbcProperty> readSettings(String settings) {
-
-        Map<String, JdbcProperty> properties = new LinkedHashMap<>();
-        for (RawPair pair : splitPairs(settings, ';')) {
-            if (pair.value() != null) {
-                properties.put(
-                        pair.key().trim(),
-                        new JdbcProperty(PropertySource.PATH, pair.value().trim()));
-            }
-        }
-        return properties;
-    }
-
     private static String inProcessDatabase(String url, String location, Map<String, JdbcProperty> properties) {
 
         String foldedLocation = location.toLowerCase(Locale.ROOT);
         if (".".equals(location)) {
-            addDerivedMode(properties, "MEMORY");
+            addDerivedModeUnlessWritten(properties, "MEMORY");
             return location;
         }
         if (foldedLocation.startsWith("mem:")) {
-            addDerivedMode(properties, "MEMORY");
+            addDerivedModeUnlessWritten(properties, "MEMORY");
             String name = requireName(url, location.substring("mem:".length()));
             return removeCredentials(name, true, properties).toLowerCase(Locale.ROOT);
         }
         if (foldedLocation.startsWith("res:")) {
-            addDerivedMode(properties, "RESOURCE");
+            addDerivedModeUnlessWritten(properties, "RESOURCE");
             String name = requireName(url, location.substring("res:".length()));
             return removeCredentials(name.startsWith("/") ? name : "/" + name, false, properties);
         }
         if (foldedLocation.startsWith("alias:")) {
             throw new JdbcUrlParseException(url, "The alias: connection type is not implemented");
         }
-        addDerivedMode(properties, "FILE");
+        addDerivedModeUnlessWritten(properties, "FILE");
         String name = foldedLocation.startsWith("file:") ? location.substring("file:".length()) : location;
         return removeCredentials(requireName(url, name), false, properties);
     }
@@ -145,7 +129,7 @@ public class HSQLDBParser extends AbstractUrlParser {
         String authority = slash < 0 ? hostAndPath : hostAndPath.substring(0, slash);
         Host host = parseAuthority(url, authority.toLowerCase(Locale.ROOT), server.defaultPort);
         String database = slash < 0 ? "" : serverDatabase(hostAndPath.substring(slash), properties);
-        addDerivedMode(properties, server.name());
+        addDerivedModeUnlessWritten(properties, server.name());
         return new JdbcUrl(url, DatabaseProduct.HSQLDB, protocol, List.of(host), database, properties);
     }
 
@@ -230,11 +214,5 @@ public class HSQLDBParser extends AbstractUrlParser {
             }
         }
         return true;
-    }
-
-    // HSQLDB keeps property keys as written, so only an exactly written MODE replaces the derived one.
-    private static void addDerivedMode(Map<String, JdbcProperty> properties, String mode) {
-
-        properties.putIfAbsent(MODE, new JdbcProperty(PropertySource.DERIVED, mode));
     }
 }

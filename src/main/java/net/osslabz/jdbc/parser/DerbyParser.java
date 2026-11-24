@@ -6,10 +6,10 @@ import net.osslabz.jdbc.DatabaseProduct;
 import net.osslabz.jdbc.Host;
 import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
-import net.osslabz.jdbc.PropertySource;
+import net.osslabz.jdbc.JdbcUrlParseException;
 
 /**
- * Parser for Apache Derby JDBC URLs.
+ * Parser for Apache Derby JDBC URLs, read as Derby's embedded driver and network client read them.
  *
  * <p>Supported formats:
  * <ul>
@@ -17,14 +17,45 @@ import net.osslabz.jdbc.PropertySource;
  *   <li>jdbc:derby:database;create=true</li>
  *   <li>jdbc:derby:/path/to/database</li>
  *   <li>jdbc:derby:memory:testdb (in-memory)</li>
+ *   <li>jdbc:derby:;databaseName=database</li>
  *   <li>jdbc:derby://host:port/database (network/client mode)</li>
  * </ul>
  *
- * <p>Note: Derby uses semicolon (;) as the property separator.
+ * <p>The prefix is case-sensitive. Attributes follow the first ';', separated by ';', and each needs an '='.
  */
 public class DerbyParser extends AbstractUrlParser {
 
     static final int DEFAULT_NETWORK_PORT = 1527;
+
+    private static final String PREFIX = "jdbc:derby:";
+
+    private static final String CLIENT_PREFIX = "jdbc:derby://";
+
+    private static final String DATABASE_NAME = "databaseName";
+
+    private static final String CLIENT_DATABASE_DELIMITERS = "\t\n\r\f;";
+
+    private enum Subsubprotocol {
+        MEMORY("memory:", "MEMORY", true),
+        DIRECTORY("directory:", "EMBEDDED", true),
+        CLASSPATH("classpath:", "EMBEDDED", false),
+        JAR("jar:", "EMBEDDED", false),
+        HTTP("http:", "EMBEDDED", false),
+        HTTPS("https:", "EMBEDDED", false);
+
+        private final String prefix;
+
+        private final String mode;
+
+        private final boolean prefixStripped;
+
+        Subsubprotocol(String prefix, String mode, boolean prefixStripped) {
+
+            this.prefix = prefix;
+            this.mode = mode;
+            this.prefixStripped = prefixStripped;
+        }
+    }
 
     public DerbyParser() {
 
@@ -35,56 +66,111 @@ public class DerbyParser extends AbstractUrlParser {
     public JdbcUrl parse(String url) {
 
         validateJdbcPrefix(url);
+        requireExactPrefix(url, PREFIX);
+        String protocol = extractProtocol(url, DatabaseProduct.DERBY);
 
-        DatabaseProduct dbType = DatabaseProduct.DERBY;
-        String protocol = extractProtocol(url, dbType);
-        String remainder = removeProtocol(url, protocol);
-
-        // Check for network mode (client/server)
-        if (remainder.startsWith("//")) {
-            return parseNetworkMode(url, protocol, remainder);
+        int attributesStart = url.indexOf(';');
+        Map<String, JdbcProperty> attributes =
+                readAttributes(url, attributesStart < 0 ? "" : url.substring(attributesStart + 1));
+        if (url.startsWith(CLIENT_PREFIX)) {
+            return parseClient(url, protocol, url.substring(CLIENT_PREFIX.length()), attributes);
         }
-
-        // Embedded mode - split by semicolon for properties (PATH properties)
-        String[] parts = splitFirst(remainder, ';');
-        String databasePath = parts[0];
-        String propsString = parts.length > 1 ? parts[1] : null;
-
-        Map<String, JdbcProperty> properties = parseProperties(propsString, PropertySource.PATH);
-
-        // Check for in-memory mode
-        if (databasePath.startsWith("memory:")) {
-            addDerivedProperty(properties, "MODE", "MEMORY");
-            databasePath = databasePath.substring(7);
-        } else {
-            addDerivedProperty(properties, "MODE", "EMBEDDED");
-        }
-
-        return new JdbcUrl(url, dbType, protocol, List.of(), databasePath, properties);
+        String location = url.substring(PREFIX.length(), attributesStart < 0 ? url.length() : attributesStart);
+        return parseEmbedded(url, protocol, location, attributes);
     }
 
-    /**
-     * Parses Derby in network/client mode.
-     */
-    private JdbcUrl parseNetworkMode(String url, String protocol, String remainder) {
-        // Format: //host:port/database[;properties]
-        String withoutSlashes = remainder.substring(2);
+    private static Map<String, JdbcProperty> readAttributes(String url, String text) {
 
-        // Split by semicolon for properties (PATH properties)
-        String[] mainAndProps = splitFirst(withoutSlashes, ';');
-        String mainPart = mainAndProps[0];
-        String propsString = mainAndProps.length > 1 ? mainAndProps[1] : null;
+        List<RawPair> pairs = splitPairs(text, ';');
+        for (RawPair pair : pairs) {
+            if (pair.value() == null) {
+                throw new JdbcUrlParseException(url, "Attribute without '=': " + pair.key());
+            }
+        }
+        return toTrimmedPathProperties(pairs);
+    }
 
-        Map<String, JdbcProperty> properties = parseProperties(propsString, PropertySource.PATH);
+    private static JdbcUrl parseEmbedded(
+            String url, String protocol, String location, Map<String, JdbcProperty> attributes) {
 
-        // Split host and database
-        String[] hostAndDb = splitFirst(mainPart, '/');
-        String hostString = hostAndDb[0];
-        String databaseName = hostAndDb.length > 1 ? hostAndDb[1] : "";
+        // Only an empty location defers to databaseName; a blank one trims to an empty name.
+        String name = (location.isEmpty() ? writtenDatabaseName(attributes, location) : location).trim();
+        int colon = name.indexOf(':');
+        // A colon at index 0 or 1 is no subsubprotocol, so Windows drive letters pass.
+        if (colon < 2) {
+            addDerivedModeUnlessWritten(attributes, "EMBEDDED");
+            return new JdbcUrl(url, DatabaseProduct.DERBY, protocol, List.of(), name, attributes);
+        }
+        Subsubprotocol subsubprotocol = subsubprotocolOf(url, name);
+        addDerivedModeUnlessWritten(attributes, subsubprotocol.mode);
+        String database = subsubprotocol.prefixStripped ? name.substring(subsubprotocol.prefix.length()) : name;
+        return new JdbcUrl(url, DatabaseProduct.DERBY, protocol, List.of(), database, attributes);
+    }
 
-        Host host = parseHost(hostString, DEFAULT_NETWORK_PORT);
-        addDerivedProperty(properties, "MODE", "NETWORK");
+    private static Subsubprotocol subsubprotocolOf(String url, String name) {
 
-        return new JdbcUrl(url, DatabaseProduct.DERBY, protocol, List.of(host), databaseName, properties);
+        for (Subsubprotocol subsubprotocol : Subsubprotocol.values()) {
+            if (name.startsWith(subsubprotocol.prefix)) {
+                return subsubprotocol;
+            }
+        }
+        throw new JdbcUrlParseException(url, "Unknown subsubprotocol in: " + name);
+    }
+
+    private static JdbcUrl parseClient(
+            String url, String protocol, String hostPortAndDatabase, Map<String, JdbcProperty> attributes) {
+
+        int hostEnd = indexOfAny(hostPortAndDatabase, "/:");
+        if (hostEnd < 0) {
+            throw new JdbcUrlParseException(url, "Missing database");
+        }
+        String hostname = requireHostname(url, hostPortAndDatabase.substring(0, hostEnd));
+        int port = DEFAULT_NETWORK_PORT;
+        int pathStart = hostEnd;
+        if (hostPortAndDatabase.charAt(hostEnd) == ':') {
+            pathStart = hostPortAndDatabase.indexOf('/', hostEnd);
+            if (pathStart < 0) {
+                throw new JdbcUrlParseException(url, "Missing database");
+            }
+            port = clientPort(url, hostPortAndDatabase.substring(hostEnd + 1, pathStart));
+        }
+        String database = clientDatabase(url, hostPortAndDatabase.substring(pathStart + 1), attributes);
+        addDerivedModeUnlessWritten(attributes, "NETWORK");
+        return new JdbcUrl(
+                url, DatabaseProduct.DERBY, protocol, List.of(Host.of(hostname, port)), database, attributes);
+    }
+
+    private static int clientPort(String url, String portText) {
+
+        int port = parsePort(url, portText);
+        return port == 0 ? DEFAULT_NETWORK_PORT : port;
+    }
+
+    // The server receives the name with the attributes appended, trims it, and only then defers to databaseName.
+    private static String clientDatabase(String url, String path, Map<String, JdbcProperty> attributes) {
+
+        int end = indexOfAny(path, CLIENT_DATABASE_DELIMITERS);
+        String name = path.substring(0, end < 0 ? path.length() : end).trim();
+        String database = name.isEmpty() ? writtenDatabaseName(attributes, name) : name;
+        if (database.isEmpty()) {
+            throw new JdbcUrlParseException(url, "Missing database");
+        }
+        return database;
+    }
+
+    private static String writtenDatabaseName(Map<String, JdbcProperty> attributes, String otherwise) {
+
+        JdbcProperty databaseName = attributes.get(DATABASE_NAME);
+        return databaseName == null ? otherwise : databaseName.value();
+    }
+
+    private static int indexOfAny(String text, String characters) {
+
+        for (int i = 0; i < text.length(); i++) {
+            if (characters.indexOf(text.charAt(i)) >= 0) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

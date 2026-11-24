@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.osslabz.jdbc.DatabaseProduct;
-import net.osslabz.jdbc.Host;
 import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrlParseException;
 import net.osslabz.jdbc.PropertySource;
@@ -132,6 +131,18 @@ public abstract class AbstractUrlParser implements UrlParser {
     }
 
     /**
+     * Adds a derived {@code MODE} unless the URL wrote a {@code MODE} key in exactly that case, for drivers that keep
+     * keys as written.
+     *
+     * @param properties the properties map
+     * @param mode       the mode the URL selects
+     */
+    protected static void addDerivedModeUnlessWritten(Map<String, JdbcProperty> properties, String mode) {
+
+        properties.putIfAbsent("MODE", new JdbcProperty(PropertySource.DERIVED, mode));
+    }
+
+    /**
      * Adds a descriptor property to the properties map.
      *
      * @param properties the properties map
@@ -141,33 +152,6 @@ public abstract class AbstractUrlParser implements UrlParser {
     protected void addDescriptorProperty(Map<String, JdbcProperty> properties, String key, String value) {
 
         properties.put(key, new JdbcProperty(PropertySource.DESCRIPTOR, value));
-    }
-
-    /**
-     * Parses a host:port string into a Host object.
-     *
-     * @param hostString  the host string (e.g., "localhost:3306")
-     * @param defaultPort the port the driver connects to when the URL names none
-     * @return the Host object
-     */
-    protected Host parseHost(String hostString, int defaultPort) {
-
-        if (hostString == null || hostString.isBlank()) {
-            throw new IllegalArgumentException("Host string cannot be null or blank");
-        }
-
-        // Standard hostname:port format
-        int colonIndex = hostString.lastIndexOf(':');
-        // A colon inside a bracketed IPv6 literal is not a port separator
-        if (colonIndex < hostString.lastIndexOf(']')) {
-            colonIndex = -1;
-        }
-        if (colonIndex > 0 && colonIndex < hostString.length() - 1) {
-            String hostname = hostString.substring(0, colonIndex);
-            return Host.of(hostname, parsePort(hostString, hostString.substring(colonIndex + 1)));
-        }
-
-        return Host.of(hostString, defaultPort);
     }
 
     /**
@@ -259,6 +243,26 @@ public abstract class AbstractUrlParser implements UrlParser {
             start = end + 1;
         }
         return pairs;
+    }
+
+    /**
+     * Turns pairs into path properties with key and value trimmed and keys kept as written; a later key replaces an
+     * earlier one. Pairs without '=' are left out.
+     *
+     * @param pairs the pairs in written order
+     * @return mutable map of the properties in written order
+     */
+    static Map<String, JdbcProperty> toTrimmedPathProperties(List<RawPair> pairs) {
+
+        Map<String, JdbcProperty> properties = new LinkedHashMap<>();
+        for (RawPair pair : pairs) {
+            if (pair.value() != null) {
+                properties.put(
+                        pair.key().trim(),
+                        new JdbcProperty(PropertySource.PATH, pair.value().trim()));
+            }
+        }
+        return properties;
     }
 
     private static RawPair toPair(String token) {
