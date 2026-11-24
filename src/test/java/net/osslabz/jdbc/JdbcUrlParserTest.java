@@ -7,8 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 
 /**
  * Integration tests for the main JdbcUrlParser facade.
@@ -154,5 +162,64 @@ class JdbcUrlParserTest {
         } finally {
             Locale.setDefault(defaultLocale);
         }
+    }
+
+    // Parse errors end up in application logs, and URLs carry passwords.
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "jdbc:mysql://db:password=S3Cx/shop",
+                "jdbc:mysql://db/shop?=password=S3Cx",
+                "jdbc:mariadb://address=(host=db)(type=password=S3Cx)/x",
+                "jdbc:mariadb:password=S3Cx://db/x",
+                "jdbc:postgresql://db:password=S3Cx/x",
+                "jdbc:oracle:thin:@db:1521:ORCL:password=S3Cx",
+                "jdbc:oracle:password=S3Cx:@db:1521:ORCL",
+                "jdbc:sqlserver://db\\password=S3Cx;databaseName=x",
+                "jdbc:sqlserver://db;databaseName=x;password=S3Cx;passwordS3Cx",
+                "jdbc:h2:mem:x;password=S3Cx;S3Cx",
+                "jdbc:h2:tcp://db:password=S3Cx/x",
+                "jdbc:hsqldb:hsql://[::1]password=S3Cx/x",
+                "jdbc:hsqldb:hsql://db:password=S3Cx/x",
+                "jdbc:derby:db;user=a;passwordS3Cx",
+                "jdbc:derby:password=S3Cx:x",
+                "jdbc:derby://db:password=S3Cx/x",
+                " jdbc:sqlite:t.db?password=S3Cx"
+            })
+    void keepsUrlTextOutOfParseErrorMessage(String url) {
+
+        JdbcUrlParseException e = assertThrows(JdbcUrlParseException.class, () -> JdbcUrlParser.parse(url));
+
+        assertFalse(e.getMessage().toLowerCase(Locale.ROOT).contains("s3cx"), e.getMessage());
+        assertEquals(url, e.getJdbcUrl());
+    }
+
+    @Test
+    void keepsUrlOutOfDebugLog() {
+
+        Logger logger = (Logger) LoggerFactory.getLogger(JdbcUrlParser.class);
+        Level level = logger.getLevel();
+        boolean additive = logger.isAdditive();
+        ListAppender<ILoggingEvent> events = new ListAppender<>();
+        events.start();
+        logger.addAppender(events);
+        logger.setLevel(Level.DEBUG);
+        logger.setAdditive(false);
+        try {
+            JdbcUrlParser.parse("jdbc:postgresql://db/x?password=S3Cx");
+            JdbcUrlParser.tryParse("jdbc:postgresql://db:S3Cx/x");
+        } finally {
+            logger.detachAppender(events);
+            logger.setLevel(level);
+            logger.setAdditive(additive);
+        }
+
+        assertFalse(events.list.isEmpty());
+        events.list.forEach(event -> {
+            assertFalse(event.getFormattedMessage().contains("S3Cx"), event.getFormattedMessage());
+            for (IThrowableProxy cause = event.getThrowableProxy(); cause != null; cause = cause.getCause()) {
+                assertFalse(String.valueOf(cause.getMessage()).contains("S3Cx"), cause.getMessage());
+            }
+        });
     }
 }

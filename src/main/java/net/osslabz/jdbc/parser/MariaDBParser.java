@@ -109,7 +109,7 @@ public class MariaDBParser extends AbstractUrlParser {
         return HA_MODES.stream()
                 .filter(mode -> mode.equalsIgnoreCase(written))
                 .findFirst()
-                .orElseThrow(() -> new JdbcUrlParseException(url, "Unsupported sub-protocol: " + written));
+                .orElseThrow(() -> new JdbcUrlParseException(url, "Unsupported sub-protocol"));
     }
 
     // The host spec ends at the first '/' after any address=(...) blocks, or at the first '?' if that comes earlier.
@@ -246,7 +246,7 @@ public class MariaDBParser extends AbstractUrlParser {
 
         int literalEnd = token.indexOf(']');
         if (literalEnd < 0) {
-            throw new JdbcUrlParseException(url, "Unclosed IPv6 literal: " + token);
+            throw new JdbcUrlParseException(url, "Unclosed IPv6 literal");
         }
         int port = DEFAULT_PORT;
         if (token.startsWith(":", literalEnd + 1)) {
@@ -292,7 +292,7 @@ public class MariaDBParser extends AbstractUrlParser {
             String[] keyAndValue =
                     group.replace("(", "").replace(")", "").trim().split("=");
             if (keyAndValue.length != 2) {
-                throw new JdbcUrlParseException(url, "Expected key=value in address, found " + group);
+                throw new JdbcUrlParseException(url, "Expected key=value in address");
             }
             String value = keyAndValue[1].toLowerCase(Locale.ROOT);
             switch (keyAndValue[0].toLowerCase(Locale.ROOT)) {
@@ -309,7 +309,7 @@ public class MariaDBParser extends AbstractUrlParser {
         private static void requireType(String url, String type) {
 
             if (ADDRESS_TYPES.stream().noneMatch(type::equalsIgnoreCase)) {
-                throw new JdbcUrlParseException(url, "Invalid address type: " + type);
+                throw new JdbcUrlParseException(url, "Invalid address type");
             }
         }
     }

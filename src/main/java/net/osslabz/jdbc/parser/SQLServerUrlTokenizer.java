@@ -120,7 +120,7 @@ final class SQLServerUrlTokenizer {
         String name = url.substring(position, nameEnd).trim();
         if (nameEnd == url.length() || url.charAt(nameEnd) == PAIR_SEPARATOR) {
             if (!name.isEmpty()) {
-                throw new JdbcUrlParseException(url, "Property without '=': " + name);
+                throw new JdbcUrlParseException(url, "Property without '='");
             }
             position = nameEnd + 1;
             return;

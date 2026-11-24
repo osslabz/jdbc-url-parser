@@ -98,13 +98,13 @@ public class H2Parser extends AbstractUrlParser {
             }
             int equalsIndex = setting.indexOf('=');
             if (equalsIndex < 0) {
-                throw new JdbcUrlParseException(url, "Setting without '=': " + setting);
+                throw new JdbcUrlParseException(url, "Setting without '='");
             }
             String key = setting.substring(0, equalsIndex);
             String value = setting.substring(equalsIndex + 1);
             String previous = valuesByFoldedKey.putIfAbsent(foldKey(key), value);
             if (previous != null && !previous.equals(value)) {
-                throw new JdbcUrlParseException(url, "Duplicate setting: " + key);
+                throw new JdbcUrlParseException(url, "Duplicate setting");
             }
             properties.put(key, new JdbcProperty(PropertySource.PATH, value));
         }
@@ -194,7 +194,7 @@ public class H2Parser extends AbstractUrlParser {
         try {
             return requirePort(url, Integer.decode(portText));
         } catch (NumberFormatException e) {
-            throw new JdbcUrlParseException(url, "Invalid port: " + portText, e);
+            throw new JdbcUrlParseException(url, "Invalid port", e);
         }
     }
 }

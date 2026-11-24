@@ -100,7 +100,7 @@ public class SQLServerParser extends AbstractUrlParser {
     private static String requireInstance(String url, String instance) {
 
         if (instance != null && !INSTANCE_NAME.matcher(instance).matches()) {
-            throw new JdbcUrlParseException(url, "Invalid instance name: " + instance);
+            throw new JdbcUrlParseException(url, "Invalid instance name");
         }
         return instance;
     }

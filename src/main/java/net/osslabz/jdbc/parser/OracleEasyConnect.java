@@ -188,7 +188,7 @@ record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<Strin
     private static void requireServerMode(String url, String mode) {
 
         if (!SERVER_MODES.contains(mode.toUpperCase(Locale.ROOT))) {
-            throw new JdbcUrlParseException(url, "Unknown Oracle server mode: " + mode);
+            throw new JdbcUrlParseException(url, "Unknown Oracle server mode");
         }
     }
 

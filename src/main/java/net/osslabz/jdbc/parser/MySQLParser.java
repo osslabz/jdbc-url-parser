@@ -109,7 +109,7 @@ public class MySQLParser extends AbstractUrlParser {
         return SUB_PROTOCOLS.stream()
                 .filter(subProtocol -> (PREFIX + subProtocol + ":").equalsIgnoreCase(scheme))
                 .findFirst()
-                .orElseThrow(() -> new JdbcUrlParseException(url, "Unsupported MySQL URL scheme: " + scheme));
+                .orElseThrow(() -> new JdbcUrlParseException(url, "Unsupported MySQL URL scheme"));
     }
 
     /**
@@ -125,7 +125,7 @@ public class MySQLParser extends AbstractUrlParser {
         }
         for (RawPair pair : splitPairs(queryText, '&')) {
             if (!QUERY_KEY.matcher(pair.key()).matches()) {
-                throw new JdbcUrlParseException(url, "Invalid query key: " + pair.key());
+                throw new JdbcUrlParseException(url, "Invalid query key");
             }
             String key = percentDecode(url, pair.key().trim());
             String value = pair.value() == null
@@ -135,7 +135,7 @@ public class MySQLParser extends AbstractUrlParser {
                 query.put(key, value);
                 properties.put(key, new JdbcProperty(PropertySource.QUERY, value == null ? "" : value));
             } else if (!isNullOrEmpty(value)) {
-                throw new JdbcUrlParseException(url, "Query value without a key: " + value);
+                throw new JdbcUrlParseException(url, "Query value without a key");
             }
         }
         return query;

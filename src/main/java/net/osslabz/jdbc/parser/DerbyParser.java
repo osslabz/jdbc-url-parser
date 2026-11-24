@@ -84,7 +84,7 @@ public class DerbyParser extends AbstractUrlParser {
         List<RawPair> pairs = splitPairs(text, ';');
         for (RawPair pair : pairs) {
             if (pair.value() == null) {
-                throw new JdbcUrlParseException(url, "Attribute without '=': " + pair.key());
+                throw new JdbcUrlParseException(url, "Attribute without '='");
             }
         }
         return toTrimmedPathProperties(pairs);
@@ -114,7 +114,7 @@ public class DerbyParser extends AbstractUrlParser {
                 return subsubprotocol;
             }
         }
-        throw new JdbcUrlParseException(url, "Unknown subsubprotocol in: " + name);
+        throw new JdbcUrlParseException(url, "Unknown subsubprotocol");
     }
 
     private static JdbcUrl parseClient(

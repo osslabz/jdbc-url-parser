@@ -131,7 +131,7 @@ public abstract class AbstractUrlParser implements UrlParser {
         try {
             return requirePort(url, Integer.parseInt(portText));
         } catch (NumberFormatException e) {
-            throw new JdbcUrlParseException(url, "Invalid port: " + portText, e);
+            throw new JdbcUrlParseException(url, "Invalid port", e);
         }
     }
 
@@ -146,7 +146,7 @@ public abstract class AbstractUrlParser implements UrlParser {
     protected static int requirePort(String url, int port) {
 
         if (port < 0 || port > MAX_PORT) {
-            throw new JdbcUrlParseException(url, "Invalid port: " + port);
+            throw new JdbcUrlParseException(url, "Invalid port");
         }
         return port;
     }
@@ -165,7 +165,7 @@ public abstract class AbstractUrlParser implements UrlParser {
         if (hostname == null
                 || !(IPV6_LITERAL.matcher(hostname).matches()
                         || REGISTERED_NAME.matcher(hostname).matches())) {
-            throw new JdbcUrlParseException(url, "Invalid hostname: " + hostname);
+            throw new JdbcUrlParseException(url, "Invalid hostname");
         }
         return hostname;
     }

@@ -81,8 +81,6 @@ public final class JdbcUrlParser {
             throw new IllegalArgumentException("JDBC URL cannot be null or blank");
         }
 
-        log.debug("Parsing JDBC URL: {}", url);
-
         // Detect database type from URL
         DatabaseProduct databaseProduct = DatabaseProduct.fromUrl(url);
 
@@ -115,7 +113,7 @@ public final class JdbcUrlParser {
         try {
             return parse(url);
         } catch (Exception e) {
-            log.debug("Failed to parse JDBC URL: {}", url, e);
+            log.debug("Failed to parse a {} URL", DatabaseProduct.fromUrl(url));
             return null;
         }
     }

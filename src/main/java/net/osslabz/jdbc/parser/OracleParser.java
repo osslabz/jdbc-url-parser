@@ -56,7 +56,7 @@ public class OracleParser extends AbstractUrlParser {
         }
         String driverType = remainder.substring(0, typeEnd);
         if (!DRIVER_TYPES.contains(driverType)) {
-            throw new JdbcUrlParseException(url, "Unsupported Oracle driver type: " + driverType);
+            throw new JdbcUrlParseException(url, "Unsupported Oracle driver type");
         }
         String target = remainder.substring(typeEnd + 1);
         int userinfoEnd = userinfoEnd(url, target);

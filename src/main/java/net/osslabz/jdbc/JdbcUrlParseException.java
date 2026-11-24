@@ -2,6 +2,9 @@ package net.osslabz.jdbc;
 
 /**
  * Exception thrown when a JDBC URL cannot be parsed.
+ *
+ * <p>The message names what is wrong and never repeats text from the URL, which may hold credentials.
+ * {@link #getJdbcUrl()} returns the URL itself.
  */
 public class JdbcUrlParseException extends RuntimeException {
 
@@ -40,11 +43,5 @@ public class JdbcUrlParseException extends RuntimeException {
     public String getJdbcUrl() {
 
         return jdbcUrl;
-    }
-
-    @Override
-    public String getMessage() {
-
-        return super.getMessage() + " [URL: " + jdbcUrl + "]";
     }
 }

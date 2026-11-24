@@ -153,7 +153,7 @@ public class HSQLDBParser extends AbstractUrlParser {
         }
         String afterLiteral = authority.substring(literalEnd + 1);
         if (!afterLiteral.isEmpty() && afterLiteral.charAt(0) != ':') {
-            throw new JdbcUrlParseException(url, "Invalid text after IPv6 literal: " + afterLiteral);
+            throw new JdbcUrlParseException(url, "Invalid text after IPv6 literal");
         }
         int port = afterLiteral.isEmpty() ? defaultPort : parsePort(url, afterLiteral.substring(1));
         return Host.of(requireHostname(url, authority.substring(0, literalEnd + 1)), port);
