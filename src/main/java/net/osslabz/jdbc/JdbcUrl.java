@@ -10,7 +10,8 @@ import java.util.stream.Collectors;
  *
  * @param originalUrl  the original unparsed URL
  * @param databaseProduct the detected database type
- * @param protocol     the full JDBC protocol (e.g., "jdbc:mysql")
+ * @param protocol     the JDBC protocol in lowercase, such as {@code jdbc:mysql:}, or with a sub-protocol
+ *                     {@code jdbc:mysql:replication:}
  * @param hosts        list of database hosts (empty for file-based databases)
  * @param databaseName the database name, file path, or memory database identifier
  * @param properties   connection properties extracted from the URL with source information
@@ -99,7 +100,9 @@ public record JdbcUrl(
     /**
      * Checks if this is a file-based database connection.
      *
-     * @return true if the database is file-based (no network hosts)
+     * <p>MariaDB URLs that connect through {@code localSocket} or {@code pipe} have no hosts and count as file-based.
+     *
+     * @return true if the URL names no network hosts
      */
     public boolean isFileBased() {
 

@@ -22,8 +22,9 @@ public enum PropertySource {
      * <p>Example: In {@code jdbc:mysql://host/db?useSSL=true&user=admin},
      * {@code useSSL} and {@code user} are QUERY properties.
      *
-     * <p>Per RFC 3986 Section 3.4, the query component contains non-hierarchical data,
-     * often represented as key=value pairs separated by '&amp;' or ';'.
+     * <p>Pairs are separated by '&amp;' only; ';'-separated properties are {@link #PATH} properties. QUERY also
+     * covers Oracle easy connect options, MariaDB options and HSQLDB's {@code ?user=} and {@code &password=}
+     * markers.
      */
     QUERY,
 
@@ -46,7 +47,7 @@ public enum PropertySource {
      * {@code user} and {@code password} in {@code jdbc:mysql://address=(host=db)(user=admin)/db}.
      *
      * <p>Per RFC 3986 Section 3.2, the authority component holds the optional userinfo
-     * ({@code user:password@}) in front of the host.
+     * ({@code user[:password]@}) in front of the host. Values can carry credentials, so treat them as secrets.
      */
     AUTHORITY,
 

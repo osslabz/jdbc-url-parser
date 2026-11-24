@@ -2,6 +2,8 @@ package net.osslabz.jdbc;
 
 /**
  * Represents a database host with hostname, port, and optional instance name. This is an immutable value object.
+ *
+ * <p>Only SQL Server and Oracle URLs fill the instance name.
  */
 public record Host(String hostname, Integer port, String instanceName) {
 
@@ -39,7 +41,7 @@ public record Host(String hostname, Integer port, String instanceName) {
     }
 
     /**
-     * Creates a host with hostname, port, and instance name (for SQL Server).
+     * Creates a host with hostname, port, and instance name (for SQL Server and Oracle).
      *
      * @param hostname     the hostname
      * @param port         the port number

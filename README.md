@@ -11,7 +11,7 @@
 
 A JDBC URL parser for Java 17+. It reads a URL the way the database's own JDBC driver does.
 
-Releases 0.1.0 and 0.1.1 went out on 2025-10-30, and 0.1.1 changed only CI and the pom description. Release 0.1.2 (2026-09-26) fixed URL prefix detection under a Turkish default locale and made the jar reproducible from its tag. Release 0.1.3 (2026-11-09) stopped shipping git.properties in the jar. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 927 tests assert the parsed output for all nine. One other project of mine depends on it.
+Releases 0.1.0 and 0.1.1 went out on 2025-10-30, and 0.1.1 changed only CI and the pom description. Release 0.1.2 (2026-09-26) fixed URL prefix detection under a Turkish default locale and made the jar reproducible from its tag. Release 0.1.3 (2026-11-09) stopped shipping git.properties in the jar. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 1003 tests assert the parsed output for all nine. One other project of mine depends on it.
 
 
 ## Features
@@ -61,6 +61,11 @@ Behaviour changes in 0.2.0:
 - A host without a port gets the driver's default port: `jdbc:mysql://db/shop` gives `Host(db, 3306)`.
 - A URL the driver rejects throws `JdbcUrlParseException`.
 - Userinfo (`user:password@`) and Connector/J host attributes come back as `AUTHORITY` properties.
+- SQL Server instance URLs without a port report port `null` (was `0`).
+- `;` no longer splits MySQL, PostgreSQL or SQLite queries.
+- `protocol` carries the sub-protocol: `jdbc:mysql:replication:`.
+- H2 and HSQLDB keep `?` text in the database name, as their drivers do.
+- Parse error messages no longer contain the URL. `JdbcUrlParseException.getJdbcUrl()` still returns it.
 
 ## Installation
 
@@ -252,9 +257,9 @@ Map<String, String> derivedProps = url.getPropertiesBySource(PropertySource.DERI
 
 | Source       | Description | Example Databases |
 |--------------|-------------|-------------------|
-| `QUERY`      | Properties from the query component, after `?` and separated by `&` | MySQL, PostgreSQL, SQLite |
+| `QUERY`      | Properties from the query component, after `?` and separated by `&` | MySQL, MariaDB, PostgreSQL, SQLite, Oracle easy connect, HSQLDB `?user=`/`&password=` markers |
 | `PATH`       | Properties embedded in the path, separated by `;` | SQL Server, H2, HSQLDB, Derby |
-| `AUTHORITY`  | Userinfo and host attributes | MySQL, Oracle |
+| `AUTHORITY`  | Userinfo (`user[:password]@`) and host attributes; values can carry credentials | MySQL, Oracle |
 | `DERIVED`    | Properties computed by parser from URL structure | All (MODE, DRIVER_TYPE, etc.) |
 | `DESCRIPTOR` | Properties extracted from connection descriptors | Oracle TNSNAMES |
 
@@ -292,7 +297,8 @@ String value = sslProp.value();            // "true"
 
 ## Error Handling
 
-The parser throws descriptive exceptions for invalid URLs:
+The parser throws `JdbcUrlParseException` for invalid URLs. The message names the problem and never repeats URL
+text, which may hold a password:
 
 ```java
 try {
