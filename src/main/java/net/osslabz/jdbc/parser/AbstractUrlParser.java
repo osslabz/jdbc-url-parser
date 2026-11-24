@@ -19,6 +19,8 @@ import net.osslabz.jdbc.PropertySource;
  */
 public abstract class AbstractUrlParser implements UrlParser {
 
+    static final String DEFAULT_HOST = "localhost";
+
     private static final int MAX_PORT = 65535;
 
     private static final Pattern IPV6_LITERAL = Pattern.compile("\\[[0-9A-Fa-f:.]+(%\\p{javaLetterOrDigit}+)?]");
@@ -168,6 +170,19 @@ public abstract class AbstractUrlParser implements UrlParser {
             throw new JdbcUrlParseException(url, "Invalid hostname");
         }
         return hostname;
+    }
+
+    /**
+     * Checks a hostname the driver hands to the JDK, which resolves an empty name to the loopback address.
+     *
+     * @param url      the URL being parsed, for the error message
+     * @param hostname the hostname the driver would connect to, possibly empty
+     * @return {@code localhost} for an empty hostname, else the hostname unchanged
+     * @throws JdbcUrlParseException if a non-empty hostname fails {@link #requireHostname(String, String)}
+     */
+    protected static String requireHostnameOrLocalhost(String url, String hostname) {
+
+        return requireHostname(url, hostname.isEmpty() ? DEFAULT_HOST : hostname);
     }
 
     /**

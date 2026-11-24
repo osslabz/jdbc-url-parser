@@ -1,15 +1,19 @@
 package net.osslabz.jdbc.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.stream.Stream;
+import net.osslabz.jdbc.JdbcUrlParseException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Tests for the property-section splitting shared by the parsers.
+ * Tests for the property-section splitting and hostname rules shared by the parsers.
  */
 class AbstractUrlParserTest {
 
@@ -41,5 +45,20 @@ class AbstractUrlParserTest {
     void splitsOnTheGivenSeparator(String text, List<RawPair> expected) {
 
         assertEquals(expected, AbstractUrlParser.splitPairs(text.replace('&', ';'), ';'));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"'',localhost", "db,db", "[::1],[::1]"})
+    void readsEmptyHostnameAsLocalhost(String hostname, String expected) {
+
+        assertEquals(expected, AbstractUrlParser.requireHostnameOrLocalhost("jdbc:x", hostname));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {" ", "ZUSR@db", "a,b"})
+    void rejectsHostnameThatCannotResolve(String hostname) {
+
+        assertThrows(
+                JdbcUrlParseException.class, () -> AbstractUrlParser.requireHostnameOrLocalhost("jdbc:x", hostname));
     }
 }

@@ -28,8 +28,6 @@ public class SQLServerParser extends AbstractUrlParser {
 
     static final int DEFAULT_PORT = 1433;
 
-    private static final String DEFAULT_HOST = "localhost";
-
     private static final List<String> SERVER_KEYS = List.of("serverName", "server");
 
     private static final List<String> PORT_KEYS = List.of("portNumber", "port");
@@ -79,12 +77,10 @@ public class SQLServerParser extends AbstractUrlParser {
             }
             hostname = hostname.substring(0, instanceSeparator);
         }
-        if (hostname.isEmpty()) {
-            hostname = DEFAULT_HOST;
-        }
-
         return new Host(
-                requireHostname(url, hostname), resolvePort(url, portText, instance), requireInstance(url, instance));
+                requireHostnameOrLocalhost(url, hostname),
+                resolvePort(url, portText, instance),
+                requireInstance(url, instance));
     }
 
     // Port 0 means "not set" to the driver; with an instance it then asks the SQL Browser.

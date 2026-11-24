@@ -1,7 +1,7 @@
 package net.osslabz.jdbc.parser;
 
 import static net.osslabz.jdbc.parser.AbstractUrlParser.parsePort;
-import static net.osslabz.jdbc.parser.AbstractUrlParser.requireHostname;
+import static net.osslabz.jdbc.parser.AbstractUrlParser.requireHostnameOrLocalhost;
 import static net.osslabz.jdbc.parser.AbstractUrlParser.splitPairs;
 
 import java.util.ArrayList;
@@ -28,8 +28,6 @@ import net.osslabz.jdbc.JdbcUrlParseException;
  * @param query   the query options under their written keys, values as written
  */
 record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<String, String> query) {
-
-    private static final String DEFAULT_HOST = "localhost";
 
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
@@ -218,7 +216,7 @@ record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<Strin
 
     private static Host host(String url, String hostname, int port, String instance) {
 
-        return new Host(requireHostname(url, hostname.isEmpty() ? DEFAULT_HOST : hostname), port, instance);
+        return new Host(requireHostnameOrLocalhost(url, hostname), port, instance);
     }
 
     /**

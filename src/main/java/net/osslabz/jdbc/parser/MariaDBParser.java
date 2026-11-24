@@ -41,8 +41,6 @@ public class MariaDBParser extends AbstractUrlParser {
 
     private static final String ADDRESS_BLOCK_START = ADDRESS_START + "(";
 
-    private static final String DEFAULT_HOST = "localhost";
-
     private static final Pattern ADDRESS_GROUP_BOUNDARY = Pattern.compile("(?=\\()|(?<=\\))");
 
     // The driver's HaMode names and values; "failover" is its alias for load balancing.
@@ -258,10 +256,7 @@ public class MariaDBParser extends AbstractUrlParser {
     // The driver holds hosts without brackets and hands an empty one to InetSocketAddress, which resolves loopback.
     private static String reportedHostname(String url, String driverHost) {
 
-        if (driverHost.isEmpty()) {
-            return DEFAULT_HOST;
-        }
-        return requireHostname(url, driverHost.indexOf(':') < 0 ? driverHost : "[" + driverHost + "]");
+        return requireHostnameOrLocalhost(url, driverHost.indexOf(':') < 0 ? driverHost : "[" + driverHost + "]");
     }
 
     // Only host, port, type, localsocket and pipe change where the driver connects.

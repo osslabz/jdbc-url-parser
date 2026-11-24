@@ -33,8 +33,6 @@ public class PostgreSQLParser extends AbstractUrlParser {
 
     private static final String PREFIX = "jdbc:postgresql:";
 
-    private static final String DEFAULT_HOST = "localhost";
-
     private static final String NETWORK_START = "//";
 
     public PostgreSQLParser() {
@@ -165,8 +163,7 @@ public class PostgreSQLParser extends AbstractUrlParser {
             }
             List<Host> result = new ArrayList<>();
             for (int i = 0; i < hosts.size(); i++) {
-                String hostname = hosts.get(i).isEmpty() ? DEFAULT_HOST : hosts.get(i);
-                result.add(Host.of(requireHostname(url, hostname), parseServerPort(url, ports.get(i))));
+                result.add(Host.of(requireHostnameOrLocalhost(url, hosts.get(i)), parseServerPort(url, ports.get(i))));
             }
             return result;
         }

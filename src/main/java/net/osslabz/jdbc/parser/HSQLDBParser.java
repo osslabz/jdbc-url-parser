@@ -35,8 +35,6 @@ public class HSQLDBParser extends AbstractUrlParser {
     static final int DEFAULT_HTTP_PORT = 80;
     static final int DEFAULT_HTTPS_PORT = 443;
 
-    private static final String DEFAULT_HOST = "localhost";
-
     private static final String USER_MARKER = "?user=";
 
     private static final String PASSWORD_MARKER = "&password=";
@@ -142,7 +140,7 @@ public class HSQLDBParser extends AbstractUrlParser {
         int colon = authority.indexOf(':', 1);
         String hostname = colon < 0 ? authority : authority.substring(0, colon);
         int port = colon < 0 ? defaultPort : parsePort(url, authority.substring(colon + 1));
-        return Host.of(requireHostname(url, hostname.isEmpty() ? DEFAULT_HOST : hostname), port);
+        return Host.of(requireHostnameOrLocalhost(url, hostname), port);
     }
 
     private static Host parseBracketedAuthority(String url, String authority, int defaultPort) {

@@ -37,8 +37,6 @@ public class H2Parser extends AbstractUrlParser {
 
     private static final String MODE = "MODE";
 
-    private static final String DEFAULT_HOST = "localhost";
-
     public H2Parser() {
 
         super(DatabaseProduct.H2);
@@ -186,7 +184,7 @@ public class H2Parser extends AbstractUrlParser {
         int colon = server.indexOf(':', literalEnd);
         String hostname = colon < 0 ? server : server.substring(0, colon);
         int port = colon < 0 ? DEFAULT_TCP_PORT : decodePort(url, server.substring(colon + 1));
-        return Host.of(requireHostname(url, hostname.isEmpty() ? DEFAULT_HOST : hostname), port);
+        return Host.of(requireHostnameOrLocalhost(url, hostname), port);
     }
 
     private static int decodePort(String url, String portText) {

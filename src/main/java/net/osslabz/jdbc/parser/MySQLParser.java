@@ -47,8 +47,6 @@ public class MySQLParser extends AbstractUrlParser {
 
     private static final List<String> SUB_PROTOCOLS = List.of("loadbalance", "replication");
 
-    private static final String DEFAULT_HOST = "localhost";
-
     private static final String USER = "user";
 
     private static final String PASSWORD = "password";

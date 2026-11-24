@@ -1,5 +1,6 @@
 package net.osslabz.jdbc.parser;
 
+import static net.osslabz.jdbc.parser.AbstractUrlParser.DEFAULT_HOST;
 import static net.osslabz.jdbc.parser.AbstractUrlParser.parsePort;
 import static net.osslabz.jdbc.parser.AbstractUrlParser.requireHostname;
 
@@ -24,8 +25,6 @@ import net.osslabz.jdbc.JdbcUrlParseException;
  * @param end         the index in the parsed text just past the root's closing ')'
  */
 record OracleDescriptor(List<Host> hosts, String serviceName, String sid, int end) {
-
-    private static final String DEFAULT_HOST = "localhost";
 
     private static final String DESCRIPTION = "DESCRIPTION";
 
