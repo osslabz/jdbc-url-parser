@@ -6,6 +6,7 @@ import java.util.Locale;
 import net.osslabz.jdbc.parser.DerbyParser;
 import net.osslabz.jdbc.parser.H2Parser;
 import net.osslabz.jdbc.parser.HSQLDBParser;
+import net.osslabz.jdbc.parser.MariaDBParser;
 import net.osslabz.jdbc.parser.MySQLParser;
 import net.osslabz.jdbc.parser.OracleParser;
 import net.osslabz.jdbc.parser.PostgreSQLParser;
@@ -47,6 +48,7 @@ public final class JdbcUrlParser {
     static {
         // Register all database-specific parsers
         PARSERS.add(new MySQLParser());
+        PARSERS.add(new MariaDBParser());
         PARSERS.add(new PostgreSQLParser());
         PARSERS.add(new OracleParser());
         PARSERS.add(new SQLServerParser());

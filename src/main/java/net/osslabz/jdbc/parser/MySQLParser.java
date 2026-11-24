@@ -5,14 +5,13 @@ import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.JdbcUrlParseException;
 
 /**
- * Parser for MySQL and MariaDB JDBC URLs.
+ * Parser for MySQL JDBC URLs.
  *
  * <p>Supported formats:
  * <ul>
  *   <li>jdbc:mysql://host:port/database</li>
  *   <li>jdbc:mysql://host1:port1,host2:port2/database</li>
  *   <li>jdbc:mysql://host/database?param=value</li>
- *   <li>jdbc:mariadb://host:port/database</li>
  * </ul>
  */
 public class MySQLParser extends AbstractUrlParser {
@@ -21,7 +20,7 @@ public class MySQLParser extends AbstractUrlParser {
 
     public MySQLParser() {
 
-        super(DatabaseProduct.MYSQL, DatabaseProduct.MARIADB);
+        super(DatabaseProduct.MYSQL);
     }
 
     @Override

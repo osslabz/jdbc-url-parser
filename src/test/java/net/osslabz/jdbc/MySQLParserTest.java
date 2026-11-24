@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests for MySQL and MariaDB JDBC URL parsing.
+ * Tests for MySQL JDBC URL parsing.
  */
 class MySQLParserTest {
 
@@ -68,30 +68,6 @@ class MySQLParserTest {
 
         assertEquals("localhost", parsed.hosts().get(0).hostname());
         assertEquals(3306, parsed.hosts().get(0).port());
-    }
-
-    @Test
-    void testMariaDBUrl() {
-
-        String url = "jdbc:mariadb://db.example.com:3307/production";
-        JdbcUrl parsed = JdbcUrlParser.parse(url);
-
-        assertEquals(DatabaseProduct.MARIADB, parsed.databaseProduct());
-        assertEquals("jdbc:mariadb:", parsed.protocol());
-        assertEquals("db.example.com", parsed.hosts().get(0).hostname());
-        assertEquals(3307, parsed.hosts().get(0).port());
-        assertEquals("production", parsed.databaseName());
-    }
-
-    @Test
-    void testMariaDBWithProperties() {
-
-        String url = "jdbc:mariadb://localhost:3306/testdb?user=root&password=secret";
-        JdbcUrl parsed = JdbcUrlParser.parse(url);
-
-        assertEquals(DatabaseProduct.MARIADB, parsed.databaseProduct());
-        assertEquals("root", parsed.getPropertyValue("user"));
-        assertEquals("secret", parsed.getPropertyValue("password"));
     }
 
     @Test
