@@ -312,6 +312,7 @@ class PostgreSQLParserTest {
                 "jdbc:postgresql://db/x?PGPORT",
                 "jdbc:postgresql://db1,db2/x?PGPORT=7",
                 "jdbc:postgresql://db/x?PGHOST=a,b",
+                "jdbc:postgresql://db/x?PGHOST=,&PGPORT=,",
                 "jdbc:postgresql://db:abc/x",
                 "jdbc:postgresql://db:/x",
                 "jdbc:postgresql://db:0/x",

@@ -183,7 +183,7 @@ record MySQLHostSpec(String host, Integer port, String user, String password, Ma
         return specs;
     }
 
-    // The key-value reader runs before address= because a key named "address" would otherwise mislead it.
+    // Connector/J's ConnectionUrlParser tries the key-value form, then address=, then the generic form.
     private static MySQLHostSpec attributeOrGenericSpec(String url, String hostInfo, Credentials credentials) {
 
         if (hostInfo.startsWith("(") && hostInfo.endsWith(")")) {

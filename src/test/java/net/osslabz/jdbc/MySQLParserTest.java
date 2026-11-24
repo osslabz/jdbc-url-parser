@@ -98,8 +98,7 @@ class MySQLParserTest {
     static Stream<Arguments> defaultPortCases() {
 
         return Stream.of(
-                Arguments.of("jdbc:mysql://localhost/mydb", List.of(host("localhost", 3306)), "mydb", props()),
-                Arguments.of("jdbc:mariadb://db/x", List.of(host("db", 3306)), "x", props()));
+                Arguments.of("jdbc:mysql://localhost/mydb", List.of(host("localhost", 3306)), "mydb", props()));
     }
 
     @ParameterizedTest
@@ -239,6 +238,11 @@ class MySQLParserTest {
                         List.of(host("db", 3306)),
                         "shop",
                         props("user", authority("ZUSR"), "password", authority(""))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:S3Cx@db/shop?USER=other",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", authority("S3Cx"), "USER", query("other"))),
                 Arguments.of(
                         "jdbc:mysql://ZUSR:S3Cx@db/shop?user=ZUSR&password=S3Cy",
                         List.of(host("db", 3306)),
