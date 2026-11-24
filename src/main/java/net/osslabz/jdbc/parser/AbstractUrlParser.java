@@ -6,23 +6,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import net.osslabz.jdbc.DatabaseProduct;
 import net.osslabz.jdbc.Host;
 import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.JdbcUrlParseException;
 import net.osslabz.jdbc.PropertySource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Abstract base class for URL parsers providing common parsing utilities.
  */
 public abstract class AbstractUrlParser implements UrlParser {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractUrlParser.class);
-
     private static final int MAX_PORT = 65535;
+
+    private static final Pattern IPV6_LITERAL = Pattern.compile("\\[[0-9A-Fa-f:.]+(%\\p{javaLetterOrDigit}+)?]");
+
+    private static final Pattern REGISTERED_NAME = Pattern.compile("[\\p{javaLetterOrDigit}._-]+");
 
     protected final Set<DatabaseProduct> supportedTypes;
 
@@ -142,11 +143,6 @@ public abstract class AbstractUrlParser implements UrlParser {
             throw new IllegalArgumentException("Host string cannot be null or blank");
         }
 
-        // Check for SQL Server instance name (hostname\instanceName:port)
-        if (hostString.contains("\\")) {
-            return parseSqlServerHost(hostString);
-        }
-
         // Standard hostname:port format
         int colonIndex = hostString.lastIndexOf(':');
         // A colon inside a bracketed IPv6 literal is not a port separator
@@ -195,36 +191,36 @@ public abstract class AbstractUrlParser implements UrlParser {
     }
 
     /**
-     * Parses SQL Server host with instance name (hostname\instanceName:port).
+     * Checks that a hostname can resolve: a bracketed IPv6 literal with an optional zone, or a non-empty run of letters,
+     * digits, '.', '-' and '_'. Anything else, such as credentials written into the host part, is rejected.
      *
-     * @param hostString the host string
-     * @return the Host object
+     * @param url      the URL being parsed, for the error message
+     * @param hostname the final hostname the driver would connect to
+     * @return the hostname unchanged
+     * @throws JdbcUrlParseException if the hostname is neither form
      */
-    protected Host parseSqlServerHost(String hostString) {
+    protected static String requireHostname(String url, String hostname) {
 
-        String hostname;
-        String instanceName;
-        Integer port = null;
-
-        int backslashIndex = hostString.indexOf('\\');
-        hostname = hostString.substring(0, backslashIndex);
-
-        String remaining = hostString.substring(backslashIndex + 1);
-        int colonIndex = remaining.indexOf(':');
-
-        if (colonIndex > 0) {
-            instanceName = remaining.substring(0, colonIndex);
-            String portString = remaining.substring(colonIndex + 1);
-            try {
-                port = Integer.parseInt(portString);
-            } catch (NumberFormatException e) {
-                log.debug("Invalid port number in SQL Server host string: {}", hostString);
-            }
-        } else {
-            instanceName = remaining;
+        if (hostname == null
+                || !(IPV6_LITERAL.matcher(hostname).matches()
+                        || REGISTERED_NAME.matcher(hostname).matches())) {
+            throw new JdbcUrlParseException(url, "Invalid hostname: " + hostname);
         }
+        return hostname;
+    }
 
-        return Host.of(hostname, port != null ? port : 0, instanceName);
+    /**
+     * Checks that the URL starts with the prefix in exactly the case the driver expects.
+     *
+     * @param url    the URL being parsed
+     * @param prefix the driver's case-sensitive prefix
+     * @throws JdbcUrlParseException if the URL does not start with the prefix
+     */
+    protected static void requireExactPrefix(String url, String prefix) {
+
+        if (!url.startsWith(prefix)) {
+            throw new JdbcUrlParseException(url, "URL must start with '" + prefix + "'");
+        }
     }
 
     /**
