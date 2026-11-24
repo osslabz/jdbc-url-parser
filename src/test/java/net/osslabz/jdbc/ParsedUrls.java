@@ -35,6 +35,11 @@ final class ParsedUrls {
         return new JdbcProperty(PropertySource.PATH, value);
     }
 
+    static JdbcProperty authority(String value) {
+
+        return new JdbcProperty(PropertySource.AUTHORITY, value);
+    }
+
     static JdbcProperty derived(String value) {
 
         return new JdbcProperty(PropertySource.DERIVED, value);

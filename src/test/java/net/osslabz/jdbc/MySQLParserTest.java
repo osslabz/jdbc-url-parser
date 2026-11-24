@@ -216,6 +216,95 @@ class MySQLParserTest {
         assertParsed(url, hosts, databaseName, properties);
     }
 
+    static Stream<Arguments> userinfoReadings() {
+
+        return Stream.of(
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:S3Cx@db/shop",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", authority("S3Cx"))),
+                Arguments.of(
+                        "jdbc:mysql://%5A%55:p%40ss%3A%2F@db/shop",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZU"), "password", authority("p@ss:/"))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR@db/shop?user=Q&password=P2",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", query("P2"))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:@db/shop?password=Q",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", authority(""))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:S3Cx@db/shop?user=ZUSR&password=S3Cy",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", authority("S3Cx"))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:S3Cx@db#x/shop",
+                        List.of(host("db", 3306)),
+                        "",
+                        props("user", authority("ZUSR"), "password", authority("S3Cx"))),
+                Arguments.of(
+                        "jdbc:mysql://db1,ZUSR2:S3Cy@db2/shop?user=Q&password=P",
+                        List.of(host("db1", 3306), host("db2", 3306)),
+                        "shop",
+                        props("user", query("Q"), "password", query("P"))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:S3Cx@db1:3306,db2:3307/x",
+                        List.of(host("db1", 3306), host("db2", 3307)),
+                        "x",
+                        props("user", authority("ZUSR"), "password", authority("S3Cx"))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:S3Cx@/shop",
+                        List.of(host("localhost", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", authority("S3Cx"))),
+                Arguments.of(
+                        "jdbc:mysql://:S3Cx@db/shop?user=Q",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", query("Q"), "password", authority("S3Cx"))),
+                Arguments.of("jdbc:mysql://@db/shop", List.of(host("db", 3306)), "shop", props()),
+                Arguments.of(
+                        "jdbc:mysql://ZU+SR:S3C:x@db/shop",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZU SR"), "password", authority("S3C:x"))),
+                Arguments.of(
+                        "jdbc:mysql:// ZUSR : S3Cx @ db /shop",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", authority("S3Cx"))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR@[::1]:3307/x",
+                        List.of(host("[::1]", 3307)),
+                        "x",
+                        props("user", authority("ZUSR"))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:S3C(x@db/shop",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", authority("S3C(x"))),
+                Arguments.of(
+                        "jdbc:mysql://ZUSR:((a)@db/shop",
+                        List.of(host("db", 3306)),
+                        "shop",
+                        props("user", authority("ZUSR"), "password", authority("((a)"))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("userinfoReadings")
+    void readsUserinfoAsAuthorityProperties(
+            String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"JDBC:mysql://db/shop", "jdbc:MYSQL://db/shop"})
     void acceptsSchemeInAnyCase(String url) {
@@ -250,7 +339,14 @@ class MySQLParserTest {
                 "jdbc:mysql://[h1,h2]:3307/shop",
                 "jdbc:mysql://2001:db8::1/shop",
                 "jdbc:mysql://[::1/shop",
-                "jdbc:mysql://[::1]x/shop");
+                "jdbc:mysql://[::1]x/shop",
+                "jdbc:mysql://ZUSR:S3Ca/S3Cb@db/shop",
+                "jdbc:mysql://ZUSR:S3Ca?S3Cb@db/shop",
+                "jdbc:mysql://ZUSR:S3Cx@db:4242x/shop",
+                "jdbc:mysql://ZUSR:S3Ca@db@evil/shop",
+                "jdbc:mysql://ZUSR:S3C#x@db/x",
+                "jdbc:mysql://[ZUSR:S3Cx@db]/shop",
+                "jdbc:mysql://ZUSR:%zz@db/shop");
     }
 
     @ParameterizedTest

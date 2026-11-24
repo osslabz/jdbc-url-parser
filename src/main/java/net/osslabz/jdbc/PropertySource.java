@@ -7,6 +7,7 @@ package net.osslabz.jdbc;
  * <ul>
  *   <li>{@link #QUERY} - Properties from the query component (after '?')</li>
  *   <li>{@link #PATH} - Properties embedded in the path component (typically with ';')</li>
+ *   <li>{@link #AUTHORITY} - Properties from the authority component (userinfo and host attributes)</li>
  *   <li>{@link #DERIVED} - Properties computed by the parser from URL structure</li>
  *   <li>{@link #DESCRIPTOR} - Properties extracted from connection descriptors</li>
  * </ul>
@@ -36,6 +37,18 @@ public enum PropertySource {
      * to delimit scheme-specific or handler-specific subcomponents.
      */
     PATH,
+
+    /**
+     * Property originates from the authority component of the URI.
+     *
+     * <p>Examples: the userinfo in {@code jdbc:mysql://admin:secret@host/db}, Oracle's
+     * {@code jdbc:oracle:thin:admin/secret@host:1521/svc}, and Connector/J host attributes such as
+     * {@code user} and {@code password} in {@code jdbc:mysql://address=(host=db)(user=admin)/db}.
+     *
+     * <p>Per RFC 3986 Section 3.2, the authority component holds the optional userinfo
+     * ({@code user:password@}) in front of the host.
+     */
+    AUTHORITY,
 
     /**
      * Property is computed/derived by the parser from the URL structure.

@@ -1,6 +1,5 @@
 package net.osslabz.jdbc.parser;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,10 +24,13 @@ import net.osslabz.jdbc.PropertySource;
  *   <li>jdbc:mysql://host1:port1,host2:port2/database (multi-host)</li>
  *   <li>jdbc:mysql://host/database?param=value</li>
  *   <li>jdbc:mysql:///database (localhost)</li>
+ *   <li>jdbc:mysql://user:password@host/database (userinfo)</li>
  * </ul>
  *
  * <p>Host, path and query are percent-decoded. The query keys {@code host}, {@code port} and {@code dbname}, in any
- * case, stand in for a host, port or database the URL leaves out; {@code dbname} overrides the path.
+ * case, stand in for a host, port or database the URL leaves out; {@code dbname} overrides the path. The first host's
+ * userinfo is reported as {@code user} and {@code password} {@link PropertySource#AUTHORITY} properties and wins
+ * over the query.
  */
 public class MySQLParser extends AbstractUrlParser {
 
@@ -38,7 +40,9 @@ public class MySQLParser extends AbstractUrlParser {
 
     private static final String DEFAULT_HOST = "localhost";
 
-    private static final String URI_SCHEME = "cj://";
+    private static final String USER = "user";
+
+    private static final String PASSWORD = "password";
 
     // Connector/J's CONNECTION_STRING_PTRN; the fragment is discarded.
     private static final Pattern CONNECTION_STRING = Pattern.compile("(?<scheme>[\\w\\+:%]+)\\s*"
@@ -48,9 +52,6 @@ public class MySQLParser extends AbstractUrlParser {
             + "(?:\\s*#.*)?");
 
     private static final Pattern QUERY_KEY = Pattern.compile("[\\w.\\-\\s%]*");
-
-    // Integer.parseInt reads these as -1, which the driver takes as "no port written".
-    private static final Pattern NO_PORT = Pattern.compile("-0*1");
 
     private static final String OPENING_MARKERS = "[(";
 
@@ -81,7 +82,12 @@ public class MySQLParser extends AbstractUrlParser {
         Map<String, JdbcProperty> properties = new LinkedHashMap<>();
         Map<String, String> query = readQuery(url, sections.group("query"), properties);
         rejectDnsSrv(url, properties);
-        List<Host> hosts = parseAuthority(url, sections.group("authority"), query, properties);
+        List<MySQLHostSpec> specs = hostSpecs(url, sections.group("authority"));
+        putAuthorityProperties(specs.get(0), properties);
+        List<Host> hosts = new ArrayList<>();
+        for (MySQLHostSpec spec : specs) {
+            hosts.add(resolve(url, spec, query));
+        }
 
         DatabaseProduct dbType = DatabaseProduct.MYSQL;
         return new JdbcUrl(
@@ -135,23 +141,13 @@ public class MySQLParser extends AbstractUrlParser {
         return pathDatabase;
     }
 
-    /**
-     * Builds one host per authority segment, filling in what a segment leaves out from the query and the defaults.
-     *
-     * @param url        the URL being parsed, for error messages
-     * @param authority  the text between '//' and the path, null when the URL has no '//'
-     * @param query      the query options keyed case-insensitively
-     * @param properties the URL's properties
-     * @return the hosts in written order
-     */
-    List<Host> parseAuthority(
-            String url, String authority, Map<String, String> query, Map<String, JdbcProperty> properties) {
+    private static List<MySQLHostSpec> hostSpecs(String url, String authority) {
 
-        List<Host> hosts = new ArrayList<>();
+        List<MySQLHostSpec> specs = new ArrayList<>();
         for (String segment : authoritySegments(authority)) {
-            hosts.add(resolve(url, writtenAddress(url, segment), query));
+            specs.addAll(MySQLHostSpec.parse(url, segment));
         }
-        return hosts;
+        return specs;
     }
 
     // The driver splits on ',' outside [...] and (...) blocks, trims each segment and keeps empty ones.
@@ -195,68 +191,29 @@ public class MySQLParser extends AbstractUrlParser {
         return i;
     }
 
-    private static WrittenAddress writtenAddress(String url, String segment) {
+    // The userinfo beats the query for user and password.
+    private static void putAuthorityProperties(MySQLHostSpec primary, Map<String, JdbcProperty> properties) {
 
-        if (segment.isEmpty()) {
-            return new WrittenAddress(null, null);
+        if (!isNullOrEmpty(primary.user())) {
+            properties.put(USER, new JdbcProperty(PropertySource.AUTHORITY, primary.user()));
         }
-        WrittenAddress uriAddress = uriAddress(url, segment);
-        return uriAddress != null ? uriAddress : genericAddress(url, segment);
+        if (primary.password() != null) {
+            properties.put(PASSWORD, new JdbcProperty(PropertySource.AUTHORITY, primary.password()));
+        }
     }
 
-    // The driver tries java.net.URI first; it is the only reader that accepts a bracketed IPv6 literal without a port.
-    private static WrittenAddress uriAddress(String url, String segment) {
+    private static Host resolve(String url, MySQLHostSpec spec, Map<String, String> options) {
 
-        URI uri;
-        try {
-            uri = URI.create(URI_SCHEME + segment);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-        if (uri.getUserInfo() != null || (uri.getHost() == null && uri.getPort() < 0)) {
-            return null;
-        }
-        String host = uri.getHost() == null ? null : percentDecode(url, uri.getHost());
-        return new WrittenAddress(host, uri.getPort() < 0 ? null : requirePort(url, uri.getPort()));
-    }
-
-    // The driver's GENERIC_HOST_PTRN: the port is whatever follows the last ':'.
-    private static WrittenAddress genericAddress(String url, String segment) {
-
-        int portSeparator = segment.lastIndexOf(':');
-        String host = portSeparator < 0 ? segment : segment.substring(0, portSeparator);
-        Integer port = portSeparator < 0
-                ? null
-                : writtenPort(
-                        url,
-                        percentDecode(url, segment.substring(portSeparator + 1).trim()));
-        String decodedHost = percentDecode(url, host.trim());
-        return new WrittenAddress(decodedHost.isEmpty() ? null : decodedHost, port);
-    }
-
-    private static Host resolve(String url, WrittenAddress address, Map<String, String> query) {
-
-        String hostname = address.host();
+        String hostname = spec.host();
         if (hostname == null) {
-            hostname = isNullOrEmpty(query.get("host")) ? DEFAULT_HOST : query.get("host");
+            hostname = isNullOrEmpty(options.get("host")) ? DEFAULT_HOST : options.get("host");
         }
-        Integer port = address.port() != null ? address.port() : writtenPort(url, query.get("port"));
+        Integer port = spec.port() != null ? spec.port() : MySQLHostSpec.writtenPort(url, options.get("port"));
         return Host.of(requireHostname(url, hostname), port == null ? DEFAULT_PORT : port);
-    }
-
-    private static Integer writtenPort(String url, String portText) {
-
-        if (isNullOrEmpty(portText) || NO_PORT.matcher(portText).matches()) {
-            return null;
-        }
-        return parsePort(url, portText);
     }
 
     private static boolean isNullOrEmpty(String text) {
 
         return text == null || text.isEmpty();
     }
-
-    // Either part is null when the segment does not write it.
-    private record WrittenAddress(String host, Integer port) {}
 }
