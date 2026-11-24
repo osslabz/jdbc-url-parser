@@ -1,19 +1,15 @@
 package net.osslabz.jdbc.parser;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.osslabz.jdbc.DatabaseProduct;
-import net.osslabz.jdbc.Host;
 import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.JdbcUrlParseException;
 import net.osslabz.jdbc.PropertySource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Parser for Oracle JDBC URLs, read as ojdbc's {@code OracleDriver} and {@code PhysicalConnection} read them.
@@ -32,8 +28,6 @@ import org.slf4j.LoggerFactory;
 public class OracleParser extends AbstractUrlParser {
 
     static final int DEFAULT_PORT = 1521;
-
-    private static final Logger log = LoggerFactory.getLogger(OracleParser.class);
 
     private static final String PREFIX = "jdbc:oracle:";
 
@@ -67,19 +61,15 @@ public class OracleParser extends AbstractUrlParser {
         String target = remainder.substring(typeEnd + 1);
         int userinfoEnd = userinfoEnd(url, target);
         String connect = target.substring(userinfoEnd + 1);
-        // ojdbc would take a second '@' as part of the host or service, which is where a password then lands.
-        int queryStart = connect.indexOf('?');
-        if ((queryStart < 0 ? connect : connect.substring(0, queryStart)).indexOf('@') >= 0) {
-            throw new JdbcUrlParseException(url, "Oracle connect string must not contain '@'");
-        }
 
         String protocol = extractProtocol(url, DatabaseProduct.ORACLE);
         Map<String, JdbcProperty> properties = new LinkedHashMap<>();
         addDerivedProperty(properties, "DRIVER_TYPE", driverType);
         properties.putAll(userInfo(url, target.substring(0, userinfoEnd)));
-        if (connect.startsWith("(")) {
-            return parseDescriptorFormat(url, protocol, properties, "@" + connect);
+        if (connect.trim().startsWith("(")) {
+            return descriptor(url, protocol, properties, connect);
         }
+        requireSingleAt(url, connect);
         if (DIRECTORY_NAMING.matcher(connect).lookingAt()) {
             throw new JdbcUrlParseException(url, "Oracle LDAP URLs are not supported");
         }
@@ -134,16 +124,68 @@ public class OracleParser extends AbstractUrlParser {
     private JdbcUrl easyConnect(
             String url, String protocol, Map<String, JdbcProperty> properties, OracleEasyConnect easyConnect) {
 
-        String databaseName = "";
-        if (easyConnect.sid() != null) {
-            databaseName = easyConnect.sid();
-            addDescriptorProperty(properties, "SID", databaseName);
-        } else if (easyConnect.service() != null) {
-            databaseName = easyConnect.service();
-            addDescriptorProperty(properties, "SERVICE_NAME", databaseName);
-        }
+        String databaseName = route(properties, easyConnect.service(), easyConnect.sid());
         easyConnect.query().forEach((key, value) -> putQueryOption(properties, key, value));
         return new JdbcUrl(url, DatabaseProduct.ORACLE, protocol, easyConnect.hosts(), databaseName, properties);
+    }
+
+    // ojdbc would take a second '@' as part of the host or service, which is where a password then lands.
+    private static void requireSingleAt(String url, String connect) {
+
+        int queryStart = connect.indexOf('?');
+        if ((queryStart < 0 ? connect : connect.substring(0, queryStart)).indexOf('@') >= 0) {
+            throw new JdbcUrlParseException(url, "Oracle connect string must not contain '@'");
+        }
+    }
+
+    private JdbcUrl descriptor(String url, String protocol, Map<String, JdbcProperty> properties, String connect) {
+
+        String trimmed = connect.trim();
+        int queryStart = descriptorQueryStart(trimmed);
+        Map<String, String> query =
+                queryStart < 0 ? Map.of() : OracleEasyConnect.parseQuery(url, trimmed.substring(queryStart + 1));
+        // ojdbc finds the '?' in the trimmed text but cuts the untrimmed one there; without options it keeps the '?'.
+        String text = query.isEmpty() ? connect : connect.substring(0, queryStart);
+        OracleDescriptor descriptor = OracleDescriptor.parse(url, text);
+        String databaseName = route(properties, descriptor.serviceName(), descriptor.sid());
+        addDescriptorProperty(properties, "DESCRIPTOR", text.substring(text.indexOf('('), descriptor.end()));
+        query.forEach((key, value) -> putQueryOption(properties, key, value));
+        return new JdbcUrl(url, DatabaseProduct.ORACLE, protocol, descriptor.hosts(), databaseName, properties);
+    }
+
+    // ojdbc's EZConnectResolver takes the first '?' outside parentheses, counting quoted parentheses too.
+    private static int descriptorQueryStart(String text) {
+
+        int depth = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '(') {
+                depth++;
+            } else if (c == ')') {
+                depth--;
+            } else if (c == '?' && depth == 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Records the SID and service name the driver connects with.
+     *
+     * @return the service name, else the SID, else empty; with both present the server decides, and the library
+     *     keeps 0.1.3's service name preference
+     */
+    private String route(Map<String, JdbcProperty> properties, String serviceName, String sid) {
+
+        if (sid != null) {
+            addDescriptorProperty(properties, "SID", sid);
+        }
+        if (serviceName == null) {
+            return sid == null ? "" : sid;
+        }
+        addDescriptorProperty(properties, "SERVICE_NAME", serviceName);
+        return serviceName;
     }
 
     // The driver routes with the URL's own driver type, SID and service; a query option only replaces userinfo.
@@ -153,62 +195,5 @@ public class OracleParser extends AbstractUrlParser {
         if (written == null || written.source() == PropertySource.AUTHORITY) {
             properties.put(key, new JdbcProperty(PropertySource.QUERY, value));
         }
-    }
-
-    /**
-     * Parses Oracle TNSNAMES descriptor format.
-     */
-    private JdbcUrl parseDescriptorFormat(
-            String url, String protocol, Map<String, JdbcProperty> properties, String connectionInfo) {
-
-        log.debug("Parsing Oracle descriptor format: {}", connectionInfo);
-
-        String hostname = null;
-        int port = DEFAULT_PORT;
-        String databaseName = null;
-
-        // Extract HOST
-        Pattern hostPattern = Pattern.compile("\\(HOST\\s*=\\s*([^)]+)\\)", Pattern.CASE_INSENSITIVE);
-        Matcher hostMatcher = hostPattern.matcher(connectionInfo);
-        if (hostMatcher.find()) {
-            hostname = hostMatcher.group(1).trim();
-        }
-
-        // Extract PORT
-        Pattern portPattern = Pattern.compile("\\(PORT\\s*=\\s*(\\d+)\\)", Pattern.CASE_INSENSITIVE);
-        Matcher portMatcher = portPattern.matcher(connectionInfo);
-        if (portMatcher.find()) {
-            port = parsePort(url, portMatcher.group(1));
-        }
-
-        // Extract SERVICE_NAME or SID
-        Pattern servicePattern = Pattern.compile("\\(SERVICE_NAME\\s*=\\s*([^)]+)\\)", Pattern.CASE_INSENSITIVE);
-        Matcher serviceMatcher = servicePattern.matcher(connectionInfo);
-        if (serviceMatcher.find()) {
-            databaseName = serviceMatcher.group(1).trim();
-            addDescriptorProperty(properties, "SERVICE_NAME", databaseName);
-        } else {
-            Pattern sidPattern = Pattern.compile("\\(SID\\s*=\\s*([^)]+)\\)", Pattern.CASE_INSENSITIVE);
-            Matcher sidMatcher = sidPattern.matcher(connectionInfo);
-            if (sidMatcher.find()) {
-                databaseName = sidMatcher.group(1).trim();
-                addDescriptorProperty(properties, "SID", databaseName);
-            }
-        }
-
-        // Create host if we found hostname
-        List<Host> hosts = List.of();
-        if (hostname != null) {
-            hosts = List.of(Host.of(hostname, port));
-        }
-
-        if (databaseName == null) {
-            databaseName = "";
-        }
-
-        // Store the full descriptor in properties for reference
-        addDescriptorProperty(properties, "DESCRIPTOR", connectionInfo);
-
-        return new JdbcUrl(url, DatabaseProduct.ORACLE, protocol, hosts, databaseName, properties);
     }
 }

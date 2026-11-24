@@ -27,8 +27,6 @@ import net.osslabz.jdbc.JdbcUrlParseException;
  */
 record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<String, String> query) {
 
-    private static final int DEFAULT_PORT = 1521;
-
     private static final String DEFAULT_HOST = "localhost";
 
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
@@ -67,7 +65,8 @@ record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<Strin
     }
 
     /**
-     * Reads an easy connect query: '&amp;'-separated {@code key=value} pairs, keys and values as written, last wins.
+     * Reads an easy connect query: '&amp;'-separated {@code key=value} pairs, keys and values as written apart from
+     * whitespace, which the driver drops; last wins.
      *
      * @param url   the URL being parsed, for error messages
      * @param query the text after '?'
@@ -77,17 +76,18 @@ record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<Strin
      */
     static Map<String, String> parseQuery(String url, String query) {
 
-        if (query.startsWith("&") || query.contains("&&")) {
+        String options = WHITESPACE.matcher(query).replaceAll("");
+        if (options.startsWith("&") || options.contains("&&")) {
             throw new JdbcUrlParseException(url, "Empty Oracle query option");
         }
-        Map<String, String> options = new LinkedHashMap<>();
-        for (RawPair pair : splitPairs(query, '&')) {
+        Map<String, String> parsed = new LinkedHashMap<>();
+        for (RawPair pair : splitPairs(options, '&')) {
             if (pair.value() == null || pair.value().indexOf('=') >= 0) {
                 throw new JdbcUrlParseException(url, "Oracle query options must be key=value");
             }
-            options.put(pair.key(), pair.value());
+            parsed.put(pair.key(), pair.value());
         }
-        return options;
+        return parsed;
     }
 
     private static boolean isSidForm(String url, String address) {
@@ -162,7 +162,7 @@ record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<Strin
         String[] entries = hostList.split(",", -1);
         int count = entries.length > 1 && entries[entries.length - 1].isEmpty() ? entries.length - 1 : entries.length;
         List<Host> hosts = new ArrayList<>();
-        int nextPort = DEFAULT_PORT;
+        int nextPort = OracleParser.DEFAULT_PORT;
         for (int i = count - 1; i >= 0; i--) {
             String entry = entries[i];
             if (entry.isEmpty() && entries.length > 1) {
