@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.osslabz.jdbc.Host;
 import net.osslabz.jdbc.JdbcUrlParseException;
@@ -18,7 +19,8 @@ import net.osslabz.jdbc.JdbcUrlParseException;
 /**
  * An Oracle easy connect string as ojdbc's {@code EZConnectResolver} and {@code AddrResolution.resolveSimple} read it:
  * {@code host:port:sid[:mode]} or {@code [protocol://]hostlist[/service[:mode][/instance]]}, each with an optional
- * {@code ?key=value&...} query.
+ * {@code ?key=value&...} query. A path outside that grammar names the service as written, as ojdbc's hostname adapter
+ * reads it.
  *
  * @param hosts   the hosts in written order, each carrying the instance when one is written
  * @param service the service name; null for the SID form or when none is written
@@ -32,6 +34,15 @@ record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<Strin
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
     private static final Pattern PROTOCOL_PREFIX = Pattern.compile("^(?i)(?:tcps?:)?(?://)?");
+
+    // OracleDriver hands URLs of this shape to the hostname adapter without EZConnectResolver.
+    private static final Pattern SIMPLE_URL = Pattern.compile(
+            "jdbc:oracle:(thin|oci|oci8|kprb|sharding):\\w*/?\\w*@(//)?[A-z0-9-._]+(:\\d+)[:/][A-z0-9-._:]+");
+
+    // EZConnectResolver's grammar for the text after the host list; A-z also spans [\]^_`.
+    private static final Pattern EASY_CONNECT_PATH = Pattern.compile(
+            "(?<service>\\w[\\w#$,\\-.]+)(?::(?:dedicated|shared|pooled))?(?:/(?<instance>[A-z][A-z0-9]+))?",
+            Pattern.CASE_INSENSITIVE);
 
     // The driver upper-cases the written mode and looks it up in this list.
     private static final Set<String> SERVER_MODES = Set.of("DEDICATED", "SHARED", "POOLED");
@@ -110,8 +121,15 @@ record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<Strin
             requireServerMode(url, segments[2]);
         }
         Host host = host(url, address.substring(0, portSeparator), parsePort(url, segments[0]), null);
-        String sid = segments[1].isEmpty() ? null : segments[1];
-        return new OracleEasyConnect(List.of(host), null, sid, query);
+        return new OracleEasyConnect(List.of(host), null, sid(url, segments[1]), query);
+    }
+
+    private static String sid(String url, String text) {
+
+        if (text.indexOf('(') >= 0 || text.indexOf(')') >= 0) {
+            throw new JdbcUrlParseException(url, "Oracle SID must not contain parentheses");
+        }
+        return text.isEmpty() ? null : text;
     }
 
     private static OracleEasyConnect serviceForm(String url, String address, Map<String, String> query) {
@@ -125,26 +143,46 @@ record OracleEasyConnect(List<Host> hosts, String service, String sid, Map<Strin
             }
             return new OracleEasyConnect(hosts, null, null, query);
         }
-        String[] path = body.substring(slash + 1).split("/", -1);
-        if (path.length > 2 || (path.length == 2 && path[1].isEmpty())) {
-            throw new JdbcUrlParseException(url, "Oracle service form must be hosts/service[/instance]");
+        Matcher path = EASY_CONNECT_PATH.matcher(body.substring(slash + 1));
+        if (SIMPLE_URL.matcher(url).matches() || !path.matches()) {
+            return hostnameForm(url, address, query);
         }
-        String instance = path.length == 2 ? path[1] : null;
-        String service = serviceName(url, path[0]);
-        return new OracleEasyConnect(hosts(url, body.substring(0, slash), instance), service, null, query);
+        List<Host> hosts = hosts(url, body.substring(0, slash), path.group("instance"));
+        return new OracleEasyConnect(hosts, path.group("service"), null, query);
     }
 
-    private static String serviceName(String url, String text) {
+    /**
+     * Reads the service form as ojdbc's hostname adapter does: one host with an optional port, then the whole path as
+     * the service, less a trailing server mode. The protocol prefix is not stripped, so it reads as the host.
+     */
+    private static OracleEasyConnect hostnameForm(String url, String address, Map<String, String> query) {
 
-        int colon = text.indexOf(':');
-        if (colon >= 0) {
-            requireServerMode(url, text.substring(colon + 1));
+        String text = address.startsWith("//") ? address.substring(2) : address;
+        int slash = text.indexOf('/');
+        String hostAndPort = text.substring(0, slash);
+        String path = text.substring(slash + 1);
+        int portSeparator = portSeparator(url, hostAndPort);
+        // Without a port the adapter reads the first ':' as the port separator, and a trailing '/' as an empty name.
+        if (path.endsWith("/") || (portSeparator < 0 && path.indexOf(':') >= 0)) {
+            throw new JdbcUrlParseException(url, "Malformed Oracle service name");
         }
-        String service = colon < 0 ? text : text.substring(0, colon);
+        int port = portSeparator < 0
+                ? OracleParser.DEFAULT_PORT
+                : parsePort(url, hostAndPort.substring(portSeparator + 1));
+        String hostname = portSeparator < 0 ? hostAndPort : hostAndPort.substring(0, portSeparator);
+        String service = withoutServerMode(path);
         if (service.isEmpty()) {
             throw new JdbcUrlParseException(url, "Oracle service name is empty");
         }
-        return service;
+        return new OracleEasyConnect(List.of(host(url, hostname, port, null)), service, null, query);
+    }
+
+    private static String withoutServerMode(String path) {
+
+        int colon = path.lastIndexOf(':');
+        boolean endsInMode =
+                colon >= 0 && SERVER_MODES.contains(path.substring(colon + 1).toUpperCase(Locale.ROOT));
+        return endsInMode ? path.substring(0, colon) : path;
     }
 
     private static void requireServerMode(String url, String mode) {

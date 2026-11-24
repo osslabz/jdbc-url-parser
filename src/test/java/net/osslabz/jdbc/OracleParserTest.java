@@ -369,6 +369,81 @@ class OracleParserTest {
         assertParsed(url, hosts, databaseName, properties);
     }
 
+    private static Arguments servicePath(String connect, Host host, String service) {
+
+        return thin(connect, List.of(host), service, SERVICE_NAME, descriptor(service));
+    }
+
+    static Stream<Arguments> servicePathReadings() {
+
+        Host db = host("db", 1521);
+        return Stream.of(
+                servicePath("@//db:1521/svc/S3C:x", db, "svc/S3C:x"),
+                servicePath("@//db:1521/svc/a-b", db, "svc/a-b"),
+                servicePath("@//db:1521/svc/a.b", db, "svc/a.b"),
+                servicePath("@//db:1521/svc/a$b", db, "svc/a$b"),
+                servicePath("@//db:1521/svc/inst/x", db, "svc/inst/x"),
+                servicePath("@//db:1521//inst", db, "/inst"),
+                servicePath("@//db:1521/svc//inst", db, "svc//inst"),
+                servicePath("@//db:1521/svc/i", db, "svc/i"),
+                servicePath("@//db:1521/svc/1", db, "svc/1"),
+                servicePath("@//db:1521/svc:dedicated/a-b", db, "svc:dedicated/a-b"),
+                servicePath("@//db:1521/svc:bogus/inst", db, "svc:bogus/inst"),
+                servicePath("@//db:1521/svc/inst:shared", db, "svc/inst"),
+                servicePath("@//db:1521/svc/S3C:dedicated", db, "svc/S3C"),
+                servicePath("@db:1521/svc:foo", db, "svc:foo"),
+                servicePath("@db:1521/svc:dedicated:x", db, "svc:dedicated:x"),
+                servicePath("@//db:1521/svc(x)", db, "svc(x)"),
+                servicePath("@//db:1521/svc(SERVICE_NAME=S3Cx)", db, "svc(SERVICE_NAME=S3Cx)"),
+                servicePath("@db:1521/svc/x(y)", db, "svc/x(y)"),
+                servicePath("@//db/svc/a-b", db, "svc/a-b"),
+                servicePath("@//[::1]/svc/a-b", host("[::1]", 1521), "svc/a-b"),
+                servicePath("@//db:1521/svc/inst_1", host("db", 1521, "inst_1"), "svc"),
+                servicePath("@//db:1521/svc/iNST9", host("db", 1521, "iNST9"), "svc"),
+                servicePath("@//db:1521/_svc/inst", host("db", 1521, "inst"), "_svc"),
+                servicePath("@//db/sv,c/inst", host("db", 1521, "inst"), "sv,c"),
+                servicePath("@tcp:1521/svc", host("tcp", 1521), "svc"),
+                servicePath("@TCP:1521/svc", host("TCP", 1521), "svc"),
+                servicePath("@tcps:2484/svc", host("tcps", 2484), "svc"),
+                servicePath("@tcp:1521/svc:dedicated", host("tcp", 1521), "svc"),
+                servicePath("@tcp:1521/svc/a-b", host("tcp", 1521), "svc/a-b"),
+                servicePath("@tcp:1521/svc/inst", host("1521", 1521, "inst"), "svc"),
+                thin(
+                        "@tcp:1521/svc?a=b",
+                        List.of(host("1521", 1521)),
+                        "svc",
+                        SERVICE_NAME,
+                        descriptor("svc"),
+                        "a",
+                        query("b")),
+                thin(
+                        "ZUSR/S3Cx@tcp:1521/svc",
+                        List.of(host("tcp", 1521)),
+                        "svc",
+                        SERVICE_NAME,
+                        descriptor("svc"),
+                        "user",
+                        authority("ZUSR"),
+                        "password",
+                        authority("S3Cx")),
+                thin(
+                        "@//db:1521/svc/a-b?password=S3Cx",
+                        List.of(db),
+                        "svc/a-b",
+                        SERVICE_NAME,
+                        descriptor("svc/a-b"),
+                        "password",
+                        query("S3Cx")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("servicePathReadings")
+    void readsServicePathAsDriverDoes(
+            String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
+    }
+
     static Stream<Arguments> userinfoReadings() {
 
         return Stream.of(
@@ -490,7 +565,6 @@ class OracleParserTest {
                         "@//,h1/svc",
                         "@//::1/svc",
                         "@//[::1/svc",
-                        "@//db:1521/svc?foo",
                         "@db:1521:ORCL?S3C",
                         "@//db:1521/svc?foo=a=b",
                         "@//db:1521/svc?&foo=bar",
@@ -498,13 +572,8 @@ class OracleParserTest {
                         "@ZUSR/S3Cx@db:1521/svc",
                         "ZUSR@db:1521/svc",
                         "ZUSR:S3Cx@db:1521/svc",
-                        "ZUSR/S3C@x@db:1521/svc",
-                        "ZUSR/S3Cx@@db",
-                        "ZUSR/S3Cx@db:1521/svc@S3Cy",
                         "@db:1521:ORCL@S3Cy",
                         "@foo://db/svc",
-                        "@ldap://ldap.example.com/svc",
-                        "@ldaps://ldap.example.com/svc",
                         "@",
                         "@db/svc?a=1&&b=2",
                         "@db/svc?a=1&&",
@@ -513,7 +582,6 @@ class OracleParserTest {
                         "@,/svc",
                         "@h1,h2",
                         "@h1:1521,h2:1522",
-                        "@//h1,h2",
                         "@db:1521:ORCL:",
                         "@db:1521:ORCL:dedicated:x",
                         "@db:99999999999:ORCL",
@@ -523,10 +591,6 @@ class OracleParserTest {
                         "@tcps://db:1521:ORCL",
                         "@db:1521:OR/CL",
                         "@//db:1521/svc/",
-                        "@db:1521/svc:foo",
-                        "@db:1521/svc:dedicated:x",
-                        "@//db:1521/svc/inst/x",
-                        "@//db:1521//inst",
                         "@db/:dedicated",
                         "ZUSR/S3C-x@db/svc",
                         "scott.t/pw@db/svc",
@@ -537,13 +601,59 @@ class OracleParserTest {
                         "\"ZUSR/pw@db/svc",
                         "ZUSR/S3Cx@",
                         "ZUSR/S3Cx",
-                        "db:1521:ORCL")
+                        "db:1521:ORCL",
+                        "@//db:1521/svc/inst/",
+                        "@//db:1521//",
+                        "@//db:1521///",
+                        "@db/svc:bogus",
+                        "@//db/svc:",
+                        "@//db/svc:/inst",
+                        "@//db/svc/a-b:dedicated",
+                        "@//db/svc/inst:dedicated",
+                        "@//[::1]/svc:x",
+                        "@//h1:1521,h2:1522/svc/a-b",
+                        "@tcp://db:1521/svc/a-b",
+                        "@tcps://db/svc/a-b",
+                        "@tcp:db:1521/svc/a-b",
+                        "@db:1521:orcl (SERVICE_NAME=S3Cx)",
+                        "@db:1521:orcl(x)",
+                        "@db:1521:or(cl",
+                        "@db:1521:orcl)",
+                        "@db:1521:or(cl:dedicated")
                 .map(connect -> THIN + connect);
     }
 
     @ParameterizedTest
     @MethodSource("driverRejections")
     void rejectsUrlDriverRejects(String url) {
+
+        assertRejected(url);
+    }
+
+    // The driver accepts these; the library rejects them on purpose.
+    static Stream<String> deliberateRejections() {
+
+        return Stream.of(
+                        // G12: ojdbc keeps a '?' without '=' in the service name.
+                        "@//db:1521/svc?foo",
+                        // G5: ojdbc reads host x@db or @db, or a service holding '@', where the password lands.
+                        "ZUSR/S3C@x@db:1521/svc",
+                        "ZUSR/S3Cx@@db",
+                        "ZUSR/S3Cx@db:1521/svc@S3Cy",
+                        "@//db:1521/svc/a@b",
+                        // G5: ojdbc reads the whole host list as the one host name h1,h2.
+                        "@//h1,h2",
+                        "@//h1,h2/svc/a-b",
+                        "@//h1,h2:1522/svc:bogus",
+                        // Non-goal: directory naming needs an LDAP server.
+                        "@ldap://ldap.example.com/svc",
+                        "@ldaps://ldap.example.com/svc")
+                .map(connect -> THIN + connect);
+    }
+
+    @ParameterizedTest
+    @MethodSource("deliberateRejections")
+    void rejectsUrlDriverAcceptsOnPurpose(String url) {
 
         assertRejected(url);
     }
