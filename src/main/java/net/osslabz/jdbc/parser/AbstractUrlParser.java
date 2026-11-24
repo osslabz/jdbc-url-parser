@@ -1,5 +1,7 @@
 package net.osslabz.jdbc.parser;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -220,6 +222,57 @@ public abstract class AbstractUrlParser implements UrlParser {
 
         if (!url.startsWith(prefix)) {
             throw new JdbcUrlParseException(url, "URL must start with '" + prefix + "'");
+        }
+    }
+
+    /**
+     * Splits a property section into pairs on the separator only. Empty tokens are skipped; each token splits at its
+     * first '='. Nothing is trimmed or decoded.
+     *
+     * @param text      the property section without its leading delimiter
+     * @param separator the character between pairs
+     * @return the pairs in written order
+     */
+    protected static List<RawPair> splitPairs(String text, char separator) {
+
+        List<RawPair> pairs = new ArrayList<>();
+        int start = 0;
+        while (start <= text.length()) {
+            int end = text.indexOf(separator, start);
+            if (end < 0) {
+                end = text.length();
+            }
+            if (end > start) {
+                pairs.add(toPair(text.substring(start, end)));
+            }
+            start = end + 1;
+        }
+        return pairs;
+    }
+
+    private static RawPair toPair(String token) {
+
+        int equalsIndex = token.indexOf('=');
+        if (equalsIndex < 0) {
+            return new RawPair(token, null);
+        }
+        return new RawPair(token.substring(0, equalsIndex), token.substring(equalsIndex + 1));
+    }
+
+    /**
+     * Decodes {@code application/x-www-form-urlencoded} text as UTF-8: '%XX' sequences and '+' as a space.
+     *
+     * @param url  the URL being parsed, for the error message
+     * @param text the encoded text
+     * @return the decoded text
+     * @throws JdbcUrlParseException if the text holds a malformed '%' sequence
+     */
+    protected static String percentDecode(String url, String text) {
+
+        try {
+            return URLDecoder.decode(text, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            throw new JdbcUrlParseException(url, "Invalid percent-encoding", e);
         }
     }
 
