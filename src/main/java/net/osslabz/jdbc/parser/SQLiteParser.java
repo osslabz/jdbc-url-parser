@@ -1,5 +1,6 @@
 package net.osslabz.jdbc.parser;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import net.osslabz.jdbc.DatabaseProduct;
@@ -9,6 +10,10 @@ import net.osslabz.jdbc.PropertySource;
 
 /**
  * Parser for SQLite JDBC URLs.
+ *
+ * <p>Read as sqlite-jdbc reads them: the prefix is case-insensitive, the first '?' starts the query and its pairs are
+ * separated by '&amp;' only. Query pairs are properties and never part of the database name, so a driver-specific
+ * file name such as {@code t.db?mode=ro} is not reproduced.
  *
  * <p>Supported formats:
  * <ul>
@@ -29,27 +34,29 @@ public class SQLiteParser extends AbstractUrlParser {
     public JdbcUrl parse(String url) {
 
         validateJdbcPrefix(url);
+        String protocol = extractProtocol(url, DatabaseProduct.SQLITE);
 
-        DatabaseProduct dbType = DatabaseProduct.SQLITE;
-        String protocol = extractProtocol(url, dbType);
-        String remainder = removeProtocol(url, protocol);
+        // The driver trims the whole URL, so trailing whitespace never reaches the database name.
+        String address = url.trim().substring(protocol.length());
+        int queryStart = address.indexOf('?');
+        String databaseName = queryStart < 0 ? address : address.substring(0, queryStart);
+        Map<String, JdbcProperty> properties =
+                queryStart < 0 ? new LinkedHashMap<>() : queryProperties(address.substring(queryStart + 1));
 
-        // Split properties (QUERY properties after ?)
-        String[] mainAndProps = splitFirst(remainder, '?');
-        String databasePath = mainAndProps[0];
-        String propsString = mainAndProps.length > 1 ? mainAndProps[1] : null;
+        addDerivedModeUnlessWritten(properties, ":memory:".equals(databaseName) ? "MEMORY" : "FILE");
+        return new JdbcUrl(url, DatabaseProduct.SQLITE, protocol, List.of(), databaseName, properties);
+    }
 
-        Map<String, JdbcProperty> properties = parseProperties(propsString, PropertySource.QUERY);
+    private static Map<String, JdbcProperty> queryProperties(String query) {
 
-        // Check for in-memory database
-        if (":memory:".equals(databasePath) || "memory:".equals(databasePath)) {
-            addDerivedProperty(properties, "MODE", "MEMORY");
-            databasePath = ":memory:";
-        } else {
-            addDerivedProperty(properties, "MODE", "FILE");
+        Map<String, JdbcProperty> properties = new LinkedHashMap<>();
+        for (RawPair pair : splitPairs(query, '&')) {
+            String key = pair.key().trim();
+            if (!key.isEmpty()) {
+                String value = pair.value() == null ? "" : pair.value().trim();
+                properties.put(key, new JdbcProperty(PropertySource.QUERY, value));
+            }
         }
-
-        // SQLite is always file-based (no network hosts)
-        return new JdbcUrl(url, dbType, protocol, List.of(), databasePath, properties);
+        return properties;
     }
 }

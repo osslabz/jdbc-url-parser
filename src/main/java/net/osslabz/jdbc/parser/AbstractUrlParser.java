@@ -83,42 +83,6 @@ public abstract class AbstractUrlParser implements UrlParser {
     }
 
     /**
-     * Parses properties from a query string (after '?') or path parameters (after ';'). Supports both '&amp;' and ';' as separators. Always returns a mutable map so parsers can add additional properties.
-     *
-     * @param queryString the query string without the leading '?' or ';'
-     * @param source      the source of these properties (QUERY or PATH)
-     * @return mutable map of properties with source information
-     */
-    protected Map<String, JdbcProperty> parseProperties(String queryString, PropertySource source) {
-
-        Map<String, JdbcProperty> properties = new LinkedHashMap<>();
-
-        if (queryString == null || queryString.isBlank()) {
-            return properties;
-        }
-
-        String[] pairs = queryString.split("[&;]", -1);
-
-        for (String pair : pairs) {
-            if (pair.isBlank()) {
-                continue;
-            }
-
-            int equalsIndex = pair.indexOf('=');
-            if (equalsIndex > 0) {
-                String key = pair.substring(0, equalsIndex).trim();
-                String value = pair.substring(equalsIndex + 1).trim();
-                properties.put(key, new JdbcProperty(source, value));
-            } else {
-                // Property without value (flag)
-                properties.put(pair.trim(), new JdbcProperty(source, ""));
-            }
-        }
-
-        return properties;
-    }
-
-    /**
      * Adds a derived property to the properties map.
      *
      * @param properties the properties map
@@ -289,36 +253,5 @@ public abstract class AbstractUrlParser implements UrlParser {
         } catch (IllegalArgumentException e) {
             throw new JdbcUrlParseException(url, "Invalid percent-encoding", e);
         }
-    }
-
-    /**
-     * Extracts the portion of the URL after the protocol prefix.
-     *
-     * @param url      the full JDBC URL
-     * @param protocol the protocol prefix to remove
-     * @return the URL remainder after the protocol
-     */
-    protected String removeProtocol(String url, String protocol) {
-
-        if (url.toLowerCase(Locale.ROOT).startsWith(protocol.toLowerCase(Locale.ROOT))) {
-            return url.substring(protocol.length());
-        }
-        throw new JdbcUrlParseException(url, "URL does not start with expected protocol: " + protocol);
-    }
-
-    /**
-     * Splits a string by a delimiter, limiting to two parts.
-     *
-     * @param input     the input string
-     * @param delimiter the delimiter character
-     * @return array with two parts, or the original string if delimiter not found
-     */
-    protected String[] splitFirst(String input, char delimiter) {
-
-        int index = input.indexOf(delimiter);
-        if (index >= 0) {
-            return new String[] {input.substring(0, index), input.substring(index + 1)};
-        }
-        return new String[] {input};
     }
 }
