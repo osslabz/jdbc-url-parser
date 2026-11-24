@@ -317,29 +317,4 @@ public abstract class AbstractUrlParser implements UrlParser {
         }
         return new String[] {input};
     }
-
-    /**
-     * Splits by first occurrence of either ';' or '?'. Useful for databases that support both property delimiters.
-     *
-     * @param input the input string
-     * @return array with two parts (main and properties), or just main part if no delimiter found
-     */
-    protected String[] splitByFirstPropertyDelimiter(String input) {
-
-        int semicolonIndex = input.indexOf(';');
-        int questionIndex = input.indexOf('?');
-
-        int splitIndex;
-        if (semicolonIndex >= 0 && questionIndex >= 0) {
-            splitIndex = Math.min(semicolonIndex, questionIndex);
-        } else if (semicolonIndex >= 0) {
-            splitIndex = semicolonIndex;
-        } else if (questionIndex >= 0) {
-            splitIndex = questionIndex;
-        } else {
-            return new String[] {input};
-        }
-
-        return new String[] {input.substring(0, splitIndex), input.substring(splitIndex + 1)};
-    }
 }
