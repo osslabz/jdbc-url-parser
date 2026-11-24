@@ -67,10 +67,10 @@ public class H2Parser extends AbstractUrlParser {
         if (name.startsWith("ssl:")) {
             return parseRemote(url, protocol, name.substring("ssl:".length()), "SSL", properties);
         }
-        return new JdbcUrl(url, dbType, protocol, List.of(), embeddedDatabaseName(name, properties), properties);
+        return new JdbcUrl(url, dbType, protocol, List.of(), embeddedDatabaseName(url, name, properties), properties);
     }
 
-    private static String embeddedDatabaseName(String name, Map<String, JdbcProperty> properties) {
+    private static String embeddedDatabaseName(String url, String name, Map<String, JdbcProperty> properties) {
 
         if (".".equals(name)) {
             addDerivedMode(properties, "MEMORY");
@@ -81,7 +81,11 @@ public class H2Parser extends AbstractUrlParser {
             return name.substring("mem:".length());
         }
         addDerivedMode(properties, "FILE");
-        return name.startsWith("file:") ? name.substring("file:".length()) : name;
+        String fileName = name.startsWith("file:") ? name.substring("file:".length()) : name;
+        if (fileName.isEmpty()) {
+            throw new JdbcUrlParseException(url, "Database name cannot be empty");
+        }
+        return fileName;
     }
 
     private static Map<String, JdbcProperty> readSettings(String url, String settings) {

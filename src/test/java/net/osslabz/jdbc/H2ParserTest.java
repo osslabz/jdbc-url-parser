@@ -254,7 +254,8 @@ class H2ParserTest {
                 "jdbc:h2:tcp://[::1/x",
                 "jdbc:h2:tcp://db:99999/x",
                 "jdbc:H2:mem:x",
-                "jdbc:h2:");
+                "jdbc:h2:",
+                "jdbc:h2:file:");
     }
 
     @ParameterizedTest
