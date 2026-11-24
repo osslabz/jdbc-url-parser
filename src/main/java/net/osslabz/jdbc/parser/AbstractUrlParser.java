@@ -12,7 +12,6 @@ import java.util.regex.Pattern;
 import net.osslabz.jdbc.DatabaseProduct;
 import net.osslabz.jdbc.Host;
 import net.osslabz.jdbc.JdbcProperty;
-import net.osslabz.jdbc.JdbcUrl;
 import net.osslabz.jdbc.JdbcUrlParseException;
 import net.osslabz.jdbc.PropertySource;
 
@@ -277,32 +276,6 @@ public abstract class AbstractUrlParser implements UrlParser {
     }
 
     /**
-     * Parses multiple hosts separated by commas (for multi-host URLs).
-     *
-     * @param hostsString the hosts string (e.g., "host1:3306,host2:3306")
-     * @param defaultPort the port the driver connects to for a host that names none
-     * @return list of Host objects
-     */
-    protected List<Host> parseMultipleHosts(String hostsString, int defaultPort) {
-
-        if (hostsString == null || hostsString.isBlank()) {
-            return List.of();
-        }
-
-        String[] hostParts = hostsString.split(",", -1);
-        List<Host> hosts = new ArrayList<>();
-
-        for (String hostPart : hostParts) {
-            String trimmed = hostPart.trim();
-            if (!trimmed.isBlank()) {
-                hosts.add(parseHost(trimmed, defaultPort));
-            }
-        }
-
-        return hosts;
-    }
-
-    /**
      * Extracts the portion of the URL after the protocol prefix.
      *
      * @param url      the full JDBC URL
@@ -356,44 +329,5 @@ public abstract class AbstractUrlParser implements UrlParser {
         }
 
         return new String[] {input.substring(0, splitIndex), input.substring(splitIndex + 1)};
-    }
-
-    /**
-     * Common parsing logic for standard network-based JDBC URLs. Handles format: jdbc:protocol://host:port/database?properties
-     *
-     * @param url          the original JDBC URL
-     * @param databaseProduct the database type
-     * @param defaultPort  the port the driver connects to for a host that names none
-     * @return parsed JdbcUrl
-     */
-    protected JdbcUrl parseStandardNetworkUrl(String url, DatabaseProduct databaseProduct, int defaultPort) {
-
-        validateJdbcPrefix(url);
-
-        String protocol = extractProtocol(url, databaseProduct);
-        String remainder = removeProtocol(url, protocol);
-
-        // Remove leading slashes (//host:port/database format)
-        if (remainder.startsWith("//")) {
-            remainder = remainder.substring(2);
-        }
-
-        // Split into host/database and properties parts
-        String[] mainAndProps = splitFirst(remainder, '?');
-        String mainPart = mainAndProps[0];
-        String propsString = mainAndProps.length > 1 ? mainAndProps[1] : null;
-
-        // Parse properties from query component
-        Map<String, JdbcProperty> properties = parseProperties(propsString, PropertySource.QUERY);
-
-        // Split host(s) and database
-        String[] hostAndDb = splitFirst(mainPart, '/');
-        String hostsString = hostAndDb[0];
-        String databaseName = hostAndDb.length > 1 ? hostAndDb[1] : "";
-
-        // Parse hosts (supports multiple hosts for clustering/failover)
-        List<Host> hosts = parseMultipleHosts(hostsString, defaultPort);
-
-        return new JdbcUrl(url, databaseProduct, protocol, hosts, databaseName, properties);
     }
 }
