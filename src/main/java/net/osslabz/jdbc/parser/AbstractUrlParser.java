@@ -233,7 +233,7 @@ public abstract class AbstractUrlParser implements UrlParser {
      * @param separator the character between pairs
      * @return the pairs in written order
      */
-    protected static List<RawPair> splitPairs(String text, char separator) {
+    static List<RawPair> splitPairs(String text, char separator) {
 
         List<RawPair> pairs = new ArrayList<>();
         int start = 0;
