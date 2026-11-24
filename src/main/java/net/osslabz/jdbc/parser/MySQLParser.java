@@ -1,11 +1,14 @@
 package net.osslabz.jdbc.parser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.osslabz.jdbc.DatabaseProduct;
@@ -25,12 +28,15 @@ import net.osslabz.jdbc.PropertySource;
  *   <li>jdbc:mysql://host/database?param=value</li>
  *   <li>jdbc:mysql:///database (localhost)</li>
  *   <li>jdbc:mysql://user:password@host/database (userinfo)</li>
+ *   <li>jdbc:mysql://address=(host=host)(port=port)(user=user)/database (host attributes)</li>
+ *   <li>jdbc:mysql://(host=host,port=port,user=user)/database (host attributes)</li>
+ *   <li>jdbc:mysql://user:password@[host1,host2]/database (host list sharing one userinfo)</li>
  * </ul>
  *
  * <p>Host, path and query are percent-decoded. The query keys {@code host}, {@code port} and {@code dbname}, in any
- * case, stand in for a host, port or database the URL leaves out; {@code dbname} overrides the path. The first host's
- * userinfo is reported as {@code user} and {@code password} {@link PropertySource#AUTHORITY} properties and wins
- * over the query.
+ * case, stand in for a host, port or database the URL leaves out; {@code dbname} overrides the path. A host's
+ * attributes override the query for that host. The first host's attributes and userinfo are reported as
+ * {@link PropertySource#AUTHORITY} properties; its userinfo wins over both for {@code user} and {@code password}.
  */
 public class MySQLParser extends AbstractUrlParser {
 
@@ -44,6 +50,8 @@ public class MySQLParser extends AbstractUrlParser {
 
     private static final String PASSWORD = "password";
 
+    private static final Set<String> CREDENTIAL_KEYS = credentialKeys();
+
     // Connector/J's CONNECTION_STRING_PTRN; the fragment is discarded.
     private static final Pattern CONNECTION_STRING = Pattern.compile("(?<scheme>[\\w\\+:%]+)\\s*"
             + "(?://(?<authority>[^/?#]*))?\\s*"
@@ -52,10 +60,6 @@ public class MySQLParser extends AbstractUrlParser {
             + "(?:\\s*#.*)?");
 
     private static final Pattern QUERY_KEY = Pattern.compile("[\\w.\\-\\s%]*");
-
-    private static final String OPENING_MARKERS = "[(";
-
-    private static final String CLOSING_MARKERS = "])";
 
     private static final List<String> TRUE_VALUES = List.of("TRUE", "YES");
 
@@ -83,15 +87,16 @@ public class MySQLParser extends AbstractUrlParser {
         Map<String, String> query = readQuery(url, sections.group("query"), properties);
         rejectDnsSrv(url, properties);
         List<MySQLHostSpec> specs = hostSpecs(url, sections.group("authority"));
-        putAuthorityProperties(specs.get(0), properties);
+        MySQLHostSpec primary = specs.get(0);
+        putAuthorityProperties(primary, query, properties);
         List<Host> hosts = new ArrayList<>();
         for (MySQLHostSpec spec : specs) {
-            hosts.add(resolve(url, spec, query));
+            hosts.add(resolve(url, spec, hostOptions(query, spec)));
         }
 
         DatabaseProduct dbType = DatabaseProduct.MYSQL;
-        return new JdbcUrl(
-                url, dbType, extractProtocol(url, dbType), hosts, databaseName(query, pathDatabase), properties);
+        String database = databaseName(hostOptions(query, primary), pathDatabase);
+        return new JdbcUrl(url, dbType, extractProtocol(url, dbType), hosts, database, properties);
     }
 
     /**
@@ -132,10 +137,10 @@ public class MySQLParser extends AbstractUrlParser {
         }
     }
 
-    private static String databaseName(Map<String, String> query, String pathDatabase) {
+    private static String databaseName(Map<String, String> options, String pathDatabase) {
 
-        if (query.containsKey("dbname")) {
-            String database = query.get("dbname");
+        if (options.containsKey("dbname")) {
+            String database = options.get("dbname");
             return database == null ? "" : database;
         }
         return pathDatabase;
@@ -144,62 +149,45 @@ public class MySQLParser extends AbstractUrlParser {
     private static List<MySQLHostSpec> hostSpecs(String url, String authority) {
 
         List<MySQLHostSpec> specs = new ArrayList<>();
-        for (String segment : authoritySegments(authority)) {
+        for (String segment : authority == null ? List.of("") : MySQLHostSpec.split(authority)) {
             specs.addAll(MySQLHostSpec.parse(url, segment));
         }
         return specs;
     }
 
-    // The driver splits on ',' outside [...] and (...) blocks, trims each segment and keeps empty ones.
-    private static List<String> authoritySegments(String authority) {
+    // The driver lays each host's attributes over the query, keys folded as the query's are.
+    private static Map<String, String> hostOptions(Map<String, String> query, MySQLHostSpec spec) {
 
-        List<String> segments = new ArrayList<>();
-        if (authority == null) {
-            segments.add("");
-            return segments;
-        }
-        int segmentStart = 0;
-        for (int i = 0; i < authority.length(); i = blockEnd(authority, i) + 1) {
-            if (authority.charAt(i) == ',') {
-                segments.add(authority.substring(segmentStart, i).trim());
-                segmentStart = i + 1;
-            }
-        }
-        segments.add(authority.substring(segmentStart).trim());
-        return segments;
+        Map<String, String> options = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        options.putAll(query);
+        options.putAll(spec.attributes());
+        return options;
     }
 
-    // An unclosed block runs to the end; only markers of the block's own kind nest.
-    private static int blockEnd(String text, int start) {
+    /**
+     * Reports the primary host's attributes over the query, then its userinfo over both for user and password.
+     * Other hosts' credentials never reach the properties, as the driver keeps them per host.
+     */
+    private static void putAuthorityProperties(
+            MySQLHostSpec primary, Map<String, String> query, Map<String, JdbcProperty> properties) {
 
-        int kind = OPENING_MARKERS.indexOf(text.charAt(start));
-        if (kind < 0) {
-            return start;
-        }
-        char opening = OPENING_MARKERS.charAt(kind);
-        char closing = CLOSING_MARKERS.charAt(kind);
-        int depth = 0;
-        int i = start + 1;
-        while (i < text.length() && (text.charAt(i) != closing || depth > 0)) {
-            if (text.charAt(i) == opening) {
-                depth++;
-            } else if (text.charAt(i) == closing) {
-                depth--;
+        primary.attributes().forEach((key, value) -> {
+            if (!fallsBackToQuery(key, value, query)) {
+                properties.put(key, new JdbcProperty(PropertySource.AUTHORITY, value));
             }
-            i++;
-        }
-        return i;
-    }
-
-    // The userinfo beats the query for user and password.
-    private static void putAuthorityProperties(MySQLHostSpec primary, Map<String, JdbcProperty> properties) {
-
+        });
         if (!isNullOrEmpty(primary.user())) {
             properties.put(USER, new JdbcProperty(PropertySource.AUTHORITY, primary.user()));
         }
         if (primary.password() != null) {
             properties.put(PASSWORD, new JdbcProperty(PropertySource.AUTHORITY, primary.password()));
         }
+    }
+
+    // The driver takes an empty user or password as unset and falls back to the query's value.
+    private static boolean fallsBackToQuery(String key, String value, Map<String, String> query) {
+
+        return value.isEmpty() && CREDENTIAL_KEYS.contains(key) && !isNullOrEmpty(query.get(key));
     }
 
     private static Host resolve(String url, MySQLHostSpec spec, Map<String, String> options) {
@@ -210,6 +198,14 @@ public class MySQLParser extends AbstractUrlParser {
         }
         Integer port = spec.port() != null ? spec.port() : MySQLHostSpec.writtenPort(url, options.get("port"));
         return Host.of(requireHostname(url, hostname), port == null ? DEFAULT_PORT : port);
+    }
+
+    private static Set<String> credentialKeys() {
+
+        Set<String> keys = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        keys.add(USER);
+        keys.add(PASSWORD);
+        return Collections.unmodifiableSet(keys);
     }
 
     private static boolean isNullOrEmpty(String text) {
