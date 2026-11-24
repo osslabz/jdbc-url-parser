@@ -113,12 +113,11 @@ class H2ParserTest {
     @Test
     void testH2WithQuestionMarkProperties() {
 
-        String url = "jdbc:h2:mem:testdb?MODE=PostgreSQL&DATABASE_TO_LOWER=TRUE";
-        JdbcUrl parsed = JdbcUrlParser.parse(url);
-
-        assertEquals("testdb", parsed.databaseName());
-        assertEquals("PostgreSQL", parsed.getPropertyValue("MODE"));
-        assertEquals("TRUE", parsed.getPropertyValue("DATABASE_TO_LOWER"));
+        assertParsed(
+                "jdbc:h2:mem:testdb?MODE=PostgreSQL&DATABASE_TO_LOWER=TRUE",
+                List.of(),
+                "testdb?MODE=PostgreSQL&DATABASE_TO_LOWER=TRUE",
+                props("MODE", derived("MEMORY")));
     }
 
     static Stream<Arguments> defaultPortCases() {
@@ -134,5 +133,134 @@ class H2ParserTest {
             String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
 
         assertParsed(url, hosts, databaseName, properties);
+    }
+
+    static Stream<Arguments> driverReadings() {
+
+        return Stream.of(
+                Arguments.of(
+                        "jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+                        List.of(),
+                        "testdb",
+                        props("MODE", path("PostgreSQL"), "DATABASE_TO_LOWER", path("TRUE"))),
+                Arguments.of("jdbc:h2:mem:testdb;mode=mysql", List.of(), "testdb", props("mode", path("mysql"))),
+                Arguments.of(
+                        "jdbc:h2:mem:testdb;MODE=MySQL;MODE=MySQL", List.of(), "testdb", props("MODE", path("MySQL"))),
+                Arguments.of("jdbc:h2:mem:x;", List.of(), "x", props("MODE", derived("MEMORY"))),
+                Arguments.of(
+                        "jdbc:h2:mem:testdb;;DB_CLOSE_DELAY=-1;",
+                        List.of(),
+                        "testdb",
+                        props("DB_CLOSE_DELAY", path("-1"), "MODE", derived("MEMORY"))),
+                Arguments.of(
+                        "jdbc:h2:mem:t;MODE=MySQL ;DB_CLOSE_DELAY=-1",
+                        List.of(),
+                        "t",
+                        props("MODE", path("MySQL "), "DB_CLOSE_DELAY", path("-1"))),
+                Arguments.of(
+                        "jdbc:h2:mem:testdb;USER=ZUSR;PASSWORD=S3Cx",
+                        List.of(),
+                        "testdb",
+                        props("USER", path("ZUSR"), "PASSWORD", path("S3Cx"), "MODE", derived("MEMORY"))),
+                Arguments.of(
+                        "jdbc:h2:mem:testdb;INIT=RUNSCRIPT FROM 'x.sql'",
+                        List.of(),
+                        "testdb",
+                        props("INIT", path("RUNSCRIPT FROM 'x.sql'"), "MODE", derived("MEMORY"))),
+                Arguments.of(
+                        "jdbc:h2:mem:testdb;INIT=SET A=1&B=2",
+                        List.of(),
+                        "testdb",
+                        props("INIT", path("SET A=1&B=2"), "MODE", derived("MEMORY"))),
+                Arguments.of(
+                        "jdbc:h2:mem:t;INIT=a\\;b",
+                        List.of(),
+                        "t",
+                        props("INIT", path("a;b"), "MODE", derived("MEMORY"))),
+                Arguments.of(
+                        "jdbc:h2:mem:t;INIT=a\\\\b;MODE=MySQL",
+                        List.of(),
+                        "t",
+                        props("INIT", path("a\\b"), "MODE", path("MySQL"))),
+                Arguments.of(
+                        "jdbc:h2:mem:testdb;FOO=bar",
+                        List.of(),
+                        "testdb",
+                        props("FOO", path("bar"), "MODE", derived("MEMORY"))),
+                Arguments.of("jdbc:h2:mem:", List.of(), "", props("MODE", derived("MEMORY"))),
+                Arguments.of("jdbc:h2:.", List.of(), "", props("MODE", derived("MEMORY"))),
+                Arguments.of("jdbc:h2:file:/tmp/x", List.of(), "/tmp/x", props("MODE", derived("FILE"))),
+                Arguments.of("jdbc:h2:split:/tmp/x", List.of(), "split:/tmp/x", props("MODE", derived("FILE"))),
+                Arguments.of("jdbc:h2:tcp://db//x", List.of(host("db", 9092)), "/x", props("MODE", derived("TCP"))),
+                Arguments.of("jdbc:h2:tcp:db/x", List.of(host("db", 9092)), "x", props("MODE", derived("TCP"))),
+                Arguments.of("jdbc:h2:tcp://db/", List.of(host("db", 9092)), "", props("MODE", derived("TCP"))),
+                Arguments.of(
+                        "jdbc:h2:tcp://db/mem:x", List.of(host("db", 9092)), "mem:x", props("MODE", derived("TCP"))),
+                Arguments.of("jdbc:h2:ssl://db:9094/x", List.of(host("db", 9094)), "x", props("MODE", derived("SSL"))),
+                Arguments.of(
+                        "jdbc:h2:tcp://a:9092,b:9093/x",
+                        List.of(host("a", 9092), host("b", 9093)),
+                        "x",
+                        props("MODE", derived("TCP"))),
+                Arguments.of(
+                        "jdbc:h2:tcp://a , b/x",
+                        List.of(host("a", 9092), host("b", 9092)),
+                        "x",
+                        props("MODE", derived("TCP"))),
+                Arguments.of("jdbc:h2:tcp://a:0x2384/x", List.of(host("a", 9092)), "x", props("MODE", derived("TCP"))),
+                Arguments.of("jdbc:h2:tcp://[::1]/x", List.of(host("[::1]", 9092)), "x", props("MODE", derived("TCP"))),
+                Arguments.of("jdbc:h2:tcp:// /x", List.of(host("localhost", 9092)), "x", props("MODE", derived("TCP"))),
+                Arguments.of(
+                        "jdbc:h2:tcp://,/x",
+                        List.of(host("localhost", 9092), host("localhost", 9092)),
+                        "x",
+                        props("MODE", derived("TCP"))),
+                Arguments.of(
+                        "jdbc:h2:tcp://a,,b/x",
+                        List.of(host("a", 9092), host("localhost", 9092), host("b", 9092)),
+                        "x",
+                        props("MODE", derived("TCP"))),
+                Arguments.of(
+                        "jdbc:h2:tcp://db/x;MODE=MySQL", List.of(host("db", 9092)), "x", props("MODE", path("MySQL"))),
+                Arguments.of(
+                        "jdbc:h2:tcp://db:9092/x;USER=ZUSR;PASSWORD=S3Cx",
+                        List.of(host("db", 9092)),
+                        "x",
+                        props("USER", path("ZUSR"), "PASSWORD", path("S3Cx"), "MODE", derived("TCP"))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("driverReadings")
+    void readsUrlAsDriverDoes(String url, List<Host> hosts, String databaseName, Map<String, JdbcProperty> properties) {
+
+        assertParsed(url, hosts, databaseName, properties);
+    }
+
+    static Stream<String> driverRejections() {
+
+        return Stream.of(
+                "jdbc:h2:mem:testdb;MODE=MySQL;MODE=Oracle",
+                "jdbc:h2:mem:t;MODE=MySQL;mode=Oracle",
+                "jdbc:h2:mem:testdb;DB_CLOSE_DELAY",
+                "jdbc:h2:tcp://db",
+                "jdbc:h2:tcp:///x",
+                "jdbc:h2:ssl:///x",
+                "jdbc:h2:tcp://ZUSR:S3Cx@db/x",
+                "jdbc:h2:tcp://ZUSR@db/x",
+                "jdbc:h2:tcp://ZUSR:S3Cx@localhost/~/test",
+                "jdbc:h2:tcp://db:abc/x",
+                "jdbc:h2:tcp://db:/x",
+                "jdbc:h2:tcp://::1/x",
+                "jdbc:h2:tcp://[::1/x",
+                "jdbc:h2:tcp://db:99999/x",
+                "jdbc:H2:mem:x",
+                "jdbc:h2:");
+    }
+
+    @ParameterizedTest
+    @MethodSource("driverRejections")
+    void rejectsUrlDriverRejects(String url) {
+
+        assertRejected(url);
     }
 }

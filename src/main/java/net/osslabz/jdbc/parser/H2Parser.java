@@ -1,15 +1,20 @@
 package net.osslabz.jdbc.parser;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import net.osslabz.jdbc.DatabaseProduct;
 import net.osslabz.jdbc.Host;
 import net.osslabz.jdbc.JdbcProperty;
 import net.osslabz.jdbc.JdbcUrl;
+import net.osslabz.jdbc.JdbcUrlParseException;
 import net.osslabz.jdbc.PropertySource;
 
 /**
- * Parser for H2 Database JDBC URLs.
+ * Parser for H2 Database JDBC URLs, read as H2's {@code ConnectionInfo} and {@code SessionRemote} read them.
  *
  * <p>Supported formats:
  * <ul>
@@ -20,10 +25,19 @@ import net.osslabz.jdbc.PropertySource;
  *   <li>jdbc:h2:tcp://host:port/database (network mode)</li>
  *   <li>jdbc:h2:ssl://host:port/database (network with SSL)</li>
  * </ul>
+ *
+ * <p>Settings follow the first ';', separated by ';' with '\' escaping the next character. '?' and '&amp;' are
+ * ordinary characters of the name.
  */
 public class H2Parser extends AbstractUrlParser {
 
     static final int DEFAULT_TCP_PORT = 9092;
+
+    private static final String PREFIX = "jdbc:h2:";
+
+    private static final String MODE = "MODE";
+
+    private static final String DEFAULT_HOST = "localhost";
 
     public H2Parser() {
 
@@ -34,65 +48,149 @@ public class H2Parser extends AbstractUrlParser {
     public JdbcUrl parse(String url) {
 
         validateJdbcPrefix(url);
+        requireExactPrefix(url, PREFIX);
+
+        int settingsStart = url.indexOf(';');
+        String name =
+                settingsStart < 0 ? url.substring(PREFIX.length()) : url.substring(PREFIX.length(), settingsStart);
+        if (name.isEmpty()) {
+            throw new JdbcUrlParseException(url, "Database name cannot be empty");
+        }
+        Map<String, JdbcProperty> properties =
+                settingsStart < 0 ? new LinkedHashMap<>() : readSettings(url, url.substring(settingsStart + 1));
 
         DatabaseProduct dbType = DatabaseProduct.H2;
         String protocol = extractProtocol(url, dbType);
-        String remainder = removeProtocol(url, protocol);
-
-        // Split properties (using ; or ?)
-        String[] mainAndProps = splitByFirstPropertyDelimiter(remainder);
-        String mainPart = mainAndProps[0];
-        String propsString = mainAndProps.length > 1 ? mainAndProps[1] : null;
-
-        // H2 uses semicolon in path, so these are PATH properties, but also supports ? for QUERY
-        PropertySource propertySource = remainder.contains("?") ? PropertySource.QUERY : PropertySource.PATH;
-        Map<String, JdbcProperty> properties = parseProperties(propsString, propertySource);
-
-        // Check for network modes (tcp, ssl)
-        if (mainPart.startsWith("tcp://") || mainPart.startsWith("ssl://")) {
-            return parseNetworkMode(url, protocol, mainPart, properties);
+        if (name.startsWith("tcp:")) {
+            return parseRemote(url, protocol, name.substring("tcp:".length()), "TCP", properties);
         }
-
-        // File-based or in-memory mode
-        String databasePath = mainPart;
-
-        // Add mode to properties for clarity (only if not already specified in properties)
-        if (mainPart.startsWith("mem:")) {
-            if (!properties.containsKey("MODE")) {
-                addDerivedProperty(properties, "MODE", "MEMORY");
-            }
-            databasePath = mainPart.substring(4); // Remove "mem:" prefix
-        } else if (mainPart.startsWith("file:")) {
-            if (!properties.containsKey("MODE")) {
-                addDerivedProperty(properties, "MODE", "FILE");
-            }
-            databasePath = mainPart.substring(5); // Remove "file:" prefix
-        } else {
-            // Default is file mode
-            if (!properties.containsKey("MODE")) {
-                addDerivedProperty(properties, "MODE", "FILE");
-            }
+        if (name.startsWith("ssl:")) {
+            return parseRemote(url, protocol, name.substring("ssl:".length()), "SSL", properties);
         }
-
-        return new JdbcUrl(url, dbType, protocol, List.of(), databasePath, properties);
+        return new JdbcUrl(url, dbType, protocol, List.of(), embeddedDatabaseName(name, properties), properties);
     }
 
-    /**
-     * Parses H2 in network mode (tcp:// or ssl://).
-     */
-    private JdbcUrl parseNetworkMode(
-            String url, String protocol, String mainPart, Map<String, JdbcProperty> properties) {
-        // Format: tcp://host:port/database or ssl://host:port/database
-        boolean isSsl = mainPart.startsWith("ssl://");
-        String withoutScheme = mainPart.substring(mainPart.indexOf("://") + "://".length());
+    private static String embeddedDatabaseName(String name, Map<String, JdbcProperty> properties) {
 
-        String[] hostAndDb = splitFirst(withoutScheme, '/');
-        String hostString = hostAndDb[0];
-        String databaseName = hostAndDb.length > 1 ? hostAndDb[1] : "";
+        if (".".equals(name)) {
+            addDerivedMode(properties, "MEMORY");
+            return "";
+        }
+        if (name.startsWith("mem:")) {
+            addDerivedMode(properties, "MEMORY");
+            return name.substring("mem:".length());
+        }
+        addDerivedMode(properties, "FILE");
+        return name.startsWith("file:") ? name.substring("file:".length()) : name;
+    }
 
-        Host host = parseHost(hostString, DEFAULT_TCP_PORT);
-        addDerivedProperty(properties, "MODE", isSsl ? "SSL" : "TCP");
+    private static Map<String, JdbcProperty> readSettings(String url, String settings) {
 
-        return new JdbcUrl(url, DatabaseProduct.H2, protocol, List.of(host), databaseName, properties);
+        Map<String, JdbcProperty> properties = new LinkedHashMap<>();
+        Map<String, String> valuesByFoldedKey = new HashMap<>();
+        for (String setting : arraySplit(settings, ';')) {
+            if (setting.isEmpty()) {
+                continue;
+            }
+            int equalsIndex = setting.indexOf('=');
+            if (equalsIndex < 0) {
+                throw new JdbcUrlParseException(url, "Setting without '=': " + setting);
+            }
+            String key = setting.substring(0, equalsIndex);
+            String value = setting.substring(equalsIndex + 1);
+            String previous = valuesByFoldedKey.putIfAbsent(foldKey(key), value);
+            if (previous != null && !previous.equals(value)) {
+                throw new JdbcUrlParseException(url, "Duplicate setting: " + key);
+            }
+            properties.put(key, new JdbcProperty(PropertySource.PATH, value));
+        }
+        return properties;
+    }
+
+    // Mirrors StringUtils.arraySplit: empty text has no segments, '\' takes the next character, a trailing '\' stays.
+    private static List<String> arraySplit(String text, char separator) {
+
+        List<String> segments = new ArrayList<>();
+        if (text.isEmpty()) {
+            return segments;
+        }
+        StringBuilder segment = new StringBuilder();
+        boolean escaped = false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (escaped) {
+                segment.append(c);
+                escaped = false;
+            } else if (c == separator) {
+                segments.add(segment.toString());
+                segment.setLength(0);
+            } else if (c == '\\' && i < text.length() - 1) {
+                escaped = true;
+            } else {
+                segment.append(c);
+            }
+        }
+        segments.add(segment.toString());
+        return segments;
+    }
+
+    // H2 folds setting keys with StringUtils.toUpperEnglish.
+    private static String foldKey(String key) {
+
+        return key.toUpperCase(Locale.ROOT);
+    }
+
+    private static void addDerivedMode(Map<String, JdbcProperty> properties, String mode) {
+
+        boolean modeWritten = properties.keySet().stream().anyMatch(key -> MODE.equals(foldKey(key)));
+        if (!modeWritten) {
+            properties.put(MODE, new JdbcProperty(PropertySource.DERIVED, mode));
+        }
+    }
+
+    private static JdbcUrl parseRemote(
+            String url, String protocol, String remoteName, String mode, Map<String, JdbcProperty> properties) {
+
+        String serversAndDatabase = remoteName.startsWith("//") ? remoteName.substring("//".length()) : remoteName;
+        int slash = serversAndDatabase.indexOf('/');
+        if (slash < 0) {
+            throw new JdbcUrlParseException(url, "The server list must be followed by '/'");
+        }
+        List<Host> hosts = parseServers(url, serversAndDatabase.substring(0, slash));
+        addDerivedMode(properties, mode);
+        return new JdbcUrl(
+                url, DatabaseProduct.H2, protocol, hosts, serversAndDatabase.substring(slash + 1), properties);
+    }
+
+    private static List<Host> parseServers(String url, String serverList) {
+
+        List<Host> hosts = new ArrayList<>();
+        for (String server : arraySplit(serverList, ',')) {
+            hosts.add(parseServer(url, server.trim()));
+        }
+        // With no server H2 opens no socket and fails, so an empty list is no connection target.
+        if (hosts.isEmpty()) {
+            throw new JdbcUrlParseException(url, "No server");
+        }
+        return hosts;
+    }
+
+    // Mirrors NetUtils.createSocket: the port follows the first ':' after an optional bracketed literal.
+    private static Host parseServer(String url, String server) {
+
+        int literalEnd = server.startsWith("[") ? server.indexOf(']') : 0;
+        int colon = server.indexOf(':', literalEnd);
+        String hostname = colon < 0 ? server : server.substring(0, colon);
+        int port = colon < 0 ? DEFAULT_TCP_PORT : decodePort(url, server.substring(colon + 1));
+        return Host.of(requireHostname(url, hostname.isEmpty() ? DEFAULT_HOST : hostname), port);
+    }
+
+    private static int decodePort(String url, String portText) {
+
+        try {
+            return requirePort(url, Integer.decode(portText));
+        } catch (NumberFormatException e) {
+            throw new JdbcUrlParseException(url, "Invalid port: " + portText, e);
+        }
     }
 }
