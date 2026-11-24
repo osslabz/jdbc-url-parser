@@ -9,32 +9,58 @@
 
 
 
-A comprehensive JDBC URL parser for Java 17+ that supports all databases autoconfigured by Spring Boot 3.5.
+A JDBC URL parser for Java 17+. It reads a URL the way the database's own JDBC driver does.
 
-Releases 0.1.0 and 0.1.1 went out on 2025-10-30, and 0.1.1 changed only CI and the pom description. Release 0.1.2 (2026-09-26) fixed URL prefix detection under a Turkish default locale and made the jar reproducible from its tag. Release 0.1.3 (2026-11-09) stopped shipping git.properties in the jar. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 81 tests assert the parsed output for all nine. One other project of mine depends on it.
+Releases 0.1.0 and 0.1.1 went out on 2025-10-30, and 0.1.1 changed only CI and the pom description. Release 0.1.2 (2026-09-26) fixed URL prefix detection under a Turkish default locale and made the jar reproducible from its tag. Release 0.1.3 (2026-11-09) stopped shipping git.properties in the jar. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 927 tests assert the parsed output for all nine. One other project of mine depends on it.
 
 
 ## Features
 
 - **Comprehensive Database Support**: Parses JDBC URLs for 9 major database types
-- **Property Source Tracking**: Identifies where each property originated (query string, path parameters, derived, or descriptor)
+- **Property Source Tracking**: Identifies where each property originated (query string, path parameters, authority, derived, or descriptor)
  extensible design
 - **Type-Safe**: Uses Java 17 records for immutability and null safety
 - **Zero Dependencies**: Pure Java implementation (only SLF4J for logging)
 
 ## Supported Databases
 
-| Database        | Features                                |
-|-----------------|-----------------------------------------|
-| **MySQL**       | Single/multi-host, properties           |
-| **MariaDB**     | Single/multi-host, properties           |
-| **PostgreSQL**  | Single/multi-host, IPv6, properties     |
-| **Oracle**      | SID, Service Name, TNSNAMES descriptors |
-| **SQL Server**  | Instance names, semicolon properties    |
-| **H2**          | Memory, file, TCP, SSL modes            |
-| **HSQLDB**      | Memory, file, resource, server modes    |
-| **Derby**       | Embedded, memory, network modes         |
-| **SQLite**      | File and in-memory databases            |
+| Database        | Features                                                                  |
+|-----------------|---------------------------------------------------------------------------|
+| **MySQL**       | Multi-host, userinfo, host attributes, loadbalance/replication            |
+| **MariaDB**     | Multi-host, address=, HA modes                                            |
+| **PostgreSQL**  | Multi-host, IPv6, PGHOST/PGPORT/PGDBNAME overrides                        |
+| **Oracle**      | SID, service name, easy connect host lists, descriptors                   |
+| **SQL Server**  | Instance names, `{}` quoting, synonyms, serverName/portNumber overrides   |
+| **H2**          | Memory, file, TCP, SSL modes                                              |
+| **HSQLDB**      | Memory, file, resource, server modes                                      |
+| **Derby**       | Embedded, memory, network modes                                           |
+| **SQLite**      | File and in-memory databases                                              |
+
+## Follows the driver
+
+Each parser reads a URL the way the product's JDBC driver reads it. It reports the hosts, ports, database,
+instance and properties the driver would connect with. The reference drivers are:
+
+| Database   | Reference driver           |
+|------------|----------------------------|
+| SQL Server | mssql-jdbc 13.4.0          |
+| Oracle     | ojdbc11 23.26.3            |
+| PostgreSQL | PostgreSQL JDBC 42.7.14    |
+| MySQL      | Connector/J 9.7.0          |
+| MariaDB    | MariaDB Connector/J 3.5.10 |
+| H2         | H2 2.4.240                 |
+| HSQLDB     | HSQLDB 2.7.3               |
+| Derby      | Derby 10.16.1.1            |
+| SQLite     | sqlite-jdbc 3.53.2.1       |
+
+A few differences are deliberate. The parser rejects hostnames and ports that can never connect, and it does not
+validate option values.
+
+Behaviour changes in 0.2.0:
+
+- A host without a port gets the driver's default port: `jdbc:mysql://db/shop` gives `Host(db, 3306)`.
+- A URL the driver rejects throws `JdbcUrlParseException`.
+- Userinfo (`user:password@`) and Connector/J host attributes come back as `AUTHORITY` properties.
 
 ## Installation
 
@@ -130,7 +156,7 @@ String timezone = url.getPropertyValue("serverTimezone"); // "UTC"
 
 // All properties with source information
 Map<String, JdbcProperty> props = url.properties();
-// Each property includes its source: QUERY, PATH, DERIVED, or DESCRIPTOR
+// Each property includes its source: QUERY, PATH, AUTHORITY, DERIVED, or DESCRIPTOR
 ```
 
 ### SQL Server - Path Properties
@@ -146,7 +172,7 @@ JdbcUrl url = JdbcUrlParser.parse(sqlServerUrl);
 
 // Host includes instance name
 Host host = url.getPrimaryHost();
-// Returns: Host(localhost, 0, SQLEXPRESS)
+// Returns: Host(localhost, null, SQLEXPRESS)
 
 String instanceName = host.instanceName();        // "SQLEXPRESS"
 String database = url.databaseName();             // "TestDB"
@@ -226,8 +252,9 @@ Map<String, String> derivedProps = url.getPropertiesBySource(PropertySource.DERI
 
 | Source       | Description | Example Databases |
 |--------------|-------------|-------------------|
-| `QUERY`      | Properties from query component (after `?`) | MySQL, PostgreSQL, SQLite |
-| `PATH`       | Properties embedded in path (after `;`) | SQL Server, H2, HSQLDB, Derby |
+| `QUERY`      | Properties from the query component, after `?` and separated by `&` | MySQL, PostgreSQL, SQLite |
+| `PATH`       | Properties embedded in the path, separated by `;` | SQL Server, H2, HSQLDB, Derby |
+| `AUTHORITY`  | Userinfo and host attributes | MySQL, Oracle |
 | `DERIVED`    | Properties computed by parser from URL structure | All (MODE, DRIVER_TYPE, etc.) |
 | `DESCRIPTOR` | Properties extracted from connection descriptors | Oracle TNSNAMES |
 
