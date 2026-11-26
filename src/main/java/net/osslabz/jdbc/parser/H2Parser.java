@@ -187,12 +187,14 @@ public class H2Parser extends AbstractUrlParser {
         return Host.of(requireHostnameOrLocalhost(url, hostname), port);
     }
 
+    // The cause message repeats the URL fragment, which may hold a password.
+    @SuppressWarnings("PMD.PreserveStackTrace")
     private static int decodePort(String url, String portText) {
 
         try {
             return requirePort(url, Integer.decode(portText));
         } catch (NumberFormatException e) {
-            throw new JdbcUrlParseException(url, "Invalid port", e);
+            throw new JdbcUrlParseException(url, "Invalid port");
         }
     }
 }

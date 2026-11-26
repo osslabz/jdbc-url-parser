@@ -298,7 +298,7 @@ String value = sslProp.value();            // "true"
 ## Error Handling
 
 The parser throws `JdbcUrlParseException` for invalid URLs. The message names the problem and never repeats URL
-text, which may hold a password:
+text, which may hold a password. The exception has no cause, so a logged stack trace holds none either:
 
 ```java
 try {

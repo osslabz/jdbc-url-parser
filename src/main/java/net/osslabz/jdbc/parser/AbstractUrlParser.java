@@ -128,12 +128,14 @@ public abstract class AbstractUrlParser implements UrlParser {
      * @return the port
      * @throws JdbcUrlParseException if the text is not a number or out of range
      */
+    // The cause message repeats the URL fragment, which may hold a password.
+    @SuppressWarnings("PMD.PreserveStackTrace")
     protected static int parsePort(String url, String portText) {
 
         try {
             return requirePort(url, Integer.parseInt(portText));
         } catch (NumberFormatException e) {
-            throw new JdbcUrlParseException(url, "Invalid port", e);
+            throw new JdbcUrlParseException(url, "Invalid port");
         }
     }
 
@@ -261,12 +263,14 @@ public abstract class AbstractUrlParser implements UrlParser {
      * @return the decoded text
      * @throws JdbcUrlParseException if the text holds a malformed '%' sequence
      */
+    // The cause message repeats the URL fragment, which may hold a password.
+    @SuppressWarnings("PMD.PreserveStackTrace")
     protected static String percentDecode(String url, String text) {
 
         try {
             return URLDecoder.decode(text, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException e) {
-            throw new JdbcUrlParseException(url, "Invalid percent-encoding", e);
+            throw new JdbcUrlParseException(url, "Invalid percent-encoding");
         }
     }
 }

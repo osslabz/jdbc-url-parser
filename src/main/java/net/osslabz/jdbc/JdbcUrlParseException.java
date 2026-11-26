@@ -4,6 +4,7 @@ package net.osslabz.jdbc;
  * Exception thrown when a JDBC URL cannot be parsed.
  *
  * <p>The message names what is wrong and never repeats text from the URL, which may hold credentials.
+ * The parser throws it without a cause, so a logged stack trace holds no URL text either.
  * {@link #getJdbcUrl()} returns the URL itself.
  */
 public class JdbcUrlParseException extends RuntimeException {
