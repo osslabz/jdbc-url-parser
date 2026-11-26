@@ -11,7 +11,7 @@
 
 A JDBC URL parser for Java 17+. It reads a URL the way the database's own JDBC driver does.
 
-Releases 0.1.0 and 0.1.1 went out on 2025-10-30, and 0.1.1 changed only CI and the pom description. Release 0.1.2 (2026-09-26) fixed URL prefix detection under a Turkish default locale and made the jar reproducible from its tag. Release 0.1.3 (2026-11-09) stopped shipping git.properties in the jar. Release 0.2.0 (2026-11-24) reads each URL the way its driver does. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 1003 tests assert the parsed output for all nine. One other project of mine depends on it.
+Releases 0.1.0 and 0.1.1 went out on 2025-10-30, and 0.1.1 changed only CI and the pom description. Release 0.1.2 (2026-09-26) fixed URL prefix detection under a Turkish default locale and made the jar reproducible from its tag. Release 0.1.3 (2026-11-09) stopped shipping git.properties in the jar. Release 0.2.0 (2026-11-24) reads each URL the way its driver does. Release 0.2.1 (2026-11-26) keeps URL text out of the cause of a parse exception. Nine database products are covered, out of the 21 drivers Spring Boot 3.5 knows, and 1006 tests assert the parsed output for all nine. One other project of mine depends on it.
 
 
 ## Features
@@ -75,14 +75,14 @@ Behaviour changes in 0.2.0:
 <dependency>
     <groupId>net.osslabz</groupId>
     <artifactId>jdbc-url-parser</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```gradle
-implementation 'net.osslabz:jdbc-url-parser:0.2.0'
+implementation 'net.osslabz:jdbc-url-parser:0.2.1'
 ```
 
 ### Snapshots
